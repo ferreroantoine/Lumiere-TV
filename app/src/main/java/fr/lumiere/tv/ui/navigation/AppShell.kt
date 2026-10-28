@@ -41,9 +41,16 @@ import fr.lumiere.tv.data.server.message
 import fr.lumiere.tv.ui.appContainer
 import fr.lumiere.tv.ui.components.EmptyMessage
 import fr.lumiere.tv.ui.components.ErrorScreen
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import fr.lumiere.tv.ui.components.AmbientBackground
 import fr.lumiere.tv.ui.components.LoadingScreen
 import fr.lumiere.tv.ui.home.HomeScreen
+import fr.lumiere.tv.ui.catalog.CatalogScreen
+import fr.lumiere.tv.ui.search.SearchScreen
+import fr.lumiere.tv.data.api.TitleKind
 import fr.lumiere.tv.ui.theme.LumiereColors
 import androidx.tv.material3.NavigationDrawerItemDefaults
 import fr.lumiere.tv.ui.settings.SettingsScreen
@@ -142,17 +149,24 @@ private fun MainScreen(nav: NavHostController) {
     // Retour : d'une section vers l'Accueil ; depuis l'Accueil, l'appli se ferme.
     BackHandler(enabled = section != Section.Home) { section = Section.Home }
 
+    // En entrant dans le menu, le focus va sur la section affichée.
+    val itemFocus = androidx.compose.runtime.remember { Section.entries.associateWith { FocusRequester() } }
+
     AmbientBackground(ambient)
     NavigationDrawer(
         drawerContent = { _ ->
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-                modifier = Modifier.fillMaxHeight().padding(vertical = Safe.Vertical, horizontal = 12.dp).selectableGroup(),
+                modifier = Modifier.fillMaxHeight().padding(vertical = Safe.Vertical, horizontal = 12.dp)
+                    .focusProperties { onEnter = { itemFocus.getValue(section).requestFocus() } }
+                    .focusGroup()
+                    .selectableGroup(),
             ) {
                 Section.entries.forEach { item ->
                     NavigationDrawerItem(
                         selected = section == item,
                         onClick = { section = item },
+                        modifier = Modifier.focusRequester(itemFocus.getValue(item)),
                         leadingContent = { Icon(item.icon(), contentDescription = null) },
                         colors = NavigationDrawerItemDefaults.colors(
                             focusedContainerColor = LumiereColors.Brand400,
@@ -175,6 +189,9 @@ private fun MainScreen(nav: NavHostController) {
 private fun SectionContent(section: Section, navigator: Navigator) {
     when (section) {
         Section.Home -> HomeScreen(navigator)
+        Section.Movies -> CatalogScreen(TitleKind.MOVIE, navigator)
+        Section.Series -> CatalogScreen(TitleKind.SERIES, navigator)
+        Section.Search -> SearchScreen(navigator)
         Section.Settings -> SettingsScreen(onChangeServer = navigator::changeServer)
         else -> EmptyMessage("${section.label} : bientôt disponible")
     }

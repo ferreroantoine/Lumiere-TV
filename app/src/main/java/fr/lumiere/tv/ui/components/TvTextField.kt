@@ -14,7 +14,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -36,6 +43,7 @@ fun TvTextField(
     onSubmit: () -> Unit = {},
 ) {
     var focused by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
     val style = MaterialTheme.typography.titleMedium.copy(color = LumiereColors.Text)
     BasicTextField(
         value = value,
@@ -47,6 +55,15 @@ fun TvTextField(
         keyboardActions = KeyboardActions(onDone = { onSubmit() }, onSearch = { onSubmit() }, onGo = { onSubmit() }),
         modifier = modifier
             .onFocusChanged { focused = it.isFocused }
+            // Le champ garderait Haut/Bas : on les rend à la navigation au pavé directionnel.
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (event.key) {
+                    Key.DirectionDown -> focusManager.moveFocus(FocusDirection.Down)
+                    Key.DirectionUp -> focusManager.moveFocus(FocusDirection.Up)
+                    else -> false
+                }
+            }
             .fillMaxWidth()
             .background(LumiereColors.Ink800, LumiereShapes.Pill)
             .border(2.dp, if (focused) LumiereColors.Brand300 else LumiereColors.Ink600, LumiereShapes.Pill),

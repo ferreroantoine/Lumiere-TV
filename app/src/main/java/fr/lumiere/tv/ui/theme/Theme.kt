@@ -4,6 +4,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.FilterChipDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.darkColorScheme
 
@@ -53,8 +55,27 @@ private val colors = darkColorScheme(
     onSurface = LumiereColors.Text,
     surfaceVariant = LumiereColors.Ink700,
     onSurfaceVariant = LumiereColors.TextMuted,
-    border = LumiereColors.Brand300,
+    border = LumiereColors.Ink500,
+    borderVariant = LumiereColors.Ink600,
     error = LumiereColors.Error,
+)
+
+/** Puces de filtre : ambre au focus, remplissage sombre une fois choisies. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun lumiereChipColors() = FilterChipDefaults.colors(
+    containerColor = Color.Transparent,
+    contentColor = LumiereColors.TextMuted,
+    focusedContainerColor = LumiereColors.Brand400,
+    focusedContentColor = LumiereColors.Ink950,
+    pressedContainerColor = LumiereColors.Brand500,
+    pressedContentColor = LumiereColors.Ink950,
+    selectedContainerColor = LumiereColors.Ink700,
+    selectedContentColor = LumiereColors.Brand200,
+    focusedSelectedContainerColor = LumiereColors.Brand400,
+    focusedSelectedContentColor = LumiereColors.Ink950,
+    pressedSelectedContainerColor = LumiereColors.Brand500,
+    pressedSelectedContentColor = LumiereColors.Ink950,
 )
 
 @Composable
