@@ -46,10 +46,11 @@ class PlaybackControllerTest {
         var released = false
         var registered: PlayerPort.Listener? = null
         override var positionSec = 0.0
-        override val isPlaying = true
+        override var isPlaying = true
+        override var playWhenReady = true
         override fun load(url: String, startPositionSec: Double) { loads += url to startPositionSec }
-        override fun play() {}
-        override fun pause() {}
+        override fun play() { playWhenReady = true }
+        override fun pause() { playWhenReady = false }
         override fun seekTo(positionSec: Double) { this.positionSec = positionSec }
         override fun setListener(listener: PlayerPort.Listener) { registered = listener }
         override fun release() { released = true }
@@ -123,6 +124,22 @@ class PlaybackControllerTest {
         val progress = waitFor(1, isProgress)
         assertTrue(progress.first().body!!.utf8().contains(""""position":1200"""))
         job.cancel()
+    }
+
+    @Test
+    fun okPendantUnChargementMetEnPause() = runTest {
+        // Après un saut, l'image attend le flux (isPlaying faux) : ce n'est pas une pause.
+        sessions += session("s1", "transcode")
+        origin = "0"
+        val player = FakePlayer()
+        val c = controller(player)
+        c.start(MediaRef.Library(3))
+        player.isPlaying = false
+        assertEquals(false, c.paused)
+        c.togglePause()
+        assertEquals(true, c.paused)
+        c.togglePause()
+        assertEquals(false, c.paused)
     }
 
     @Test

@@ -1,10 +1,17 @@
 package fr.lumiere.tv.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.tv.material3.Icon
+import fr.lumiere.tv.ui.theme.GlassVariant
+import fr.lumiere.tv.ui.theme.glass
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -41,6 +48,7 @@ fun TvTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Done,
     onSubmit: () -> Unit = {},
+    leadingIcon: ImageVector? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
@@ -65,12 +73,23 @@ fun TvTextField(
                 }
             }
             .fillMaxWidth()
-            .background(LumiereColors.Ink800, LumiereShapes.Pill)
-            .border(2.dp, if (focused) LumiereColors.Brand300 else LumiereColors.Ink600, LumiereShapes.Pill),
+            // Champ en verre de Lumière ; au focus, anneau ambré (`.glass-field:focus-within`).
+            .then(if (focused) Modifier.border(3.dp, LumiereColors.Brand400.copy(alpha = 0.45f), LumiereShapes.Pill) else Modifier)
+            .glass(LumiereShapes.Pill, GlassVariant.Regular, elevation = 0.dp)
+            .then(if (focused) Modifier.border(1.5.dp, LumiereColors.Brand300, LumiereShapes.Pill) else Modifier),
         decorationBox = { inner ->
-            Box(Modifier.padding(horizontal = 28.dp, vertical = 16.dp)) {
-                if (value.isEmpty()) Text(placeholder, style = style, color = LumiereColors.TextMuted)
-                inner()
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = if (leadingIcon != null) 22.dp else 28.dp, end = 28.dp, top = 15.dp, bottom = 15.dp),
+            ) {
+                if (leadingIcon != null) {
+                    Icon(leadingIcon, contentDescription = null, tint = LumiereColors.Zinc300, modifier = Modifier.size(20.dp))
+                }
+                Box {
+                    if (value.isEmpty()) Text(placeholder, style = style, color = LumiereColors.TextMuted)
+                    inner()
+                }
             }
         },
     )

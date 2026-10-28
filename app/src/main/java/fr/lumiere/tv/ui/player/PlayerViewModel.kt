@@ -34,9 +34,7 @@ class PlayerViewModel(private val container: AppContainer, media: MediaRef) : Vi
         }
     }
 
-    fun togglePause() {
-        if (port.isPlaying) controller.pause() else controller.resume()
-    }
+    fun togglePause() = controller.togglePause()
 
     fun seekBy(deltaSec: Double) {
         viewModelScope.launch { controller.seekTo(controller.position + deltaSec) }

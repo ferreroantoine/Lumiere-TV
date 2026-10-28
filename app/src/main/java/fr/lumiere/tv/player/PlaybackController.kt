@@ -148,6 +148,14 @@ class PlaybackController(
 
     fun resume() = player.play()
 
+    /** En pause seulement si l'utilisateur l'a demandée : un chargement après un saut n'en est pas une. */
+    val paused: Boolean get() = !player.playWhenReady
+
+    /** OK de la télécommande : pause, ou reprise si la lecture est en pause. */
+    fun togglePause() {
+        if (paused) resume() else pause()
+    }
+
     /** À appeler chaque seconde : progression toutes les 10 s, compte à rebours de l'épisode suivant. */
     fun tick() {
         val s = session ?: return

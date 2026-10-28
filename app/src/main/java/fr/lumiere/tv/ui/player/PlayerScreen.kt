@@ -47,20 +47,30 @@ import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import androidx.tv.material3.Button
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.text.style.TextAlign
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import fr.lumiere.tv.data.api.MediaRef
 import fr.lumiere.tv.data.api.PlaybackSession
 import fr.lumiere.tv.player.ExoPlayerPort
 import fr.lumiere.tv.player.subtitles.Cue
+import fr.lumiere.tv.ui.components.GlassPanel
+import fr.lumiere.tv.ui.components.GlassStyle
+import fr.lumiere.tv.ui.components.LumiereButton
 import fr.lumiere.tv.ui.components.ProgressLine
 import fr.lumiere.tv.ui.containerViewModel
 import fr.lumiere.tv.ui.formatClock
+import fr.lumiere.tv.ui.theme.GlassVariant
+import fr.lumiere.tv.ui.theme.LegibleShadow
 import fr.lumiere.tv.ui.theme.LumiereColors
+import fr.lumiere.tv.ui.theme.LumiereIcons
 import fr.lumiere.tv.ui.theme.LumiereShapes
 import fr.lumiere.tv.ui.theme.Safe
+import fr.lumiere.tv.ui.theme.glass
+import fr.lumiere.tv.ui.theme.glassLens
+import fr.lumiere.tv.ui.theme.glassProminent
 import kotlinx.coroutines.delay
 import java.util.Locale
 
@@ -99,13 +109,15 @@ fun PlayerScreen(media: MediaRef, onExit: () -> Unit) {
         }
     }
     // Appli mise en arrière-plan : pause (et position envoyée).
-    LifecycleStartEffect(Unit) { onStopOrDispose { if (vm.port.isPlaying) vm.controller.pause() } }
+    LifecycleStartEffect(Unit) { onStopOrDispose { if (!vm.controller.paused) vm.controller.pause() } }
 
     BackHandler(enabled = panelOpen) { panelOpen = false }
 
     fun showControls() { controlsUntil = System.currentTimeMillis() + CONTROLS_VISIBLE_MS }
-    val paused = !vm.port.isPlaying
-    val controlsVisible = now < controlsUntil || paused || state.loading
+    // Pause : seulement celle demandée ; un flux qui se charge (démarrage, saut) n'en est pas une.
+    val paused = vm.controller.paused
+    val loading = state.loading || vm.port.isBuffering
+    val controlsVisible = now < controlsUntil || paused || loading
 
     Box(
         Modifier.fillMaxSize().background(Color.Black)
@@ -142,7 +154,7 @@ fun PlayerScreen(media: MediaRef, onExit: () -> Unit) {
         VideoSurface(vm.port)
         SubtitleOverlay(cues, raised = controlsVisible)
 
-        if (controlsVisible) ControlsOverlay(state.session, position, state.duration, paused, state.loading)
+        if (controlsVisible) ControlsOverlay(state.session, position, state.duration, paused, loading)
 
         state.nextCountdown?.let { seconds ->
             NextEpisodeCard(
@@ -236,33 +248,73 @@ private fun audioChoices(vm: PlayerViewModel, session: PlaybackSession?): List<A
     }
 }
 
+/**
+ * Commandes du lecteur : titre en haut à gauche, barre de verre en bas avec l'état (lecture ou
+ * pause), le temps écoulé, la progression et la durée, puis les touches utiles.
+ */
 @Composable
 private fun ControlsOverlay(session: PlaybackSession?, position: Double, duration: Double?, paused: Boolean, loading: Boolean) {
     Box(Modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.55f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.85f))))
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.6f), 0.25f to Color.Transparent)))
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.55f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.8f))))
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.align(Alignment.TopStart).padding(horizontal = Safe.Horizontal, vertical = Safe.Vertical + 4.dp),
+        ) {
+            Text(
+                session?.title ?: "Chargement…",
+                style = MaterialTheme.typography.headlineMedium.copy(shadow = LegibleShadow),
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            session?.subtitle?.let {
+                Text(it, style = MaterialTheme.typography.titleMedium.copy(shadow = LegibleShadow), color = LumiereColors.Zinc300)
+            }
+        }
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth()
-                .padding(horizontal = Safe.Horizontal, vertical = Safe.Vertical + 8.dp),
+                .padding(horizontal = Safe.Horizontal, vertical = Safe.Vertical),
         ) {
-            Text(session?.title ?: "Chargement…", style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            session?.subtitle?.let { Text(it, style = MaterialTheme.typography.titleSmall, color = LumiereColors.TextMuted) }
-            if (duration != null && duration > 0) ProgressLine((position / duration).toFloat())
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "${formatClock(position)} / ${duration?.let(::formatClock) ?: "--:--"}",
-                    style = MaterialTheme.typography.titleSmall,
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+                    .glass(LumiereShapes.Pill, GlassVariant.Regular)
+                    .padding(start = 8.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
+            ) {
+                Box(
+                    Modifier.size(44.dp).then(
+                        if (paused) Modifier.glassProminent(LumiereShapes.Pill) else Modifier.glassLens(LumiereShapes.Pill),
+                    ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        if (paused) LumiereIcons.Play else LumiereIcons.Pause,
+                        contentDescription = if (paused) "En pause" else "Lecture",
+                        tint = if (paused) LumiereColors.Ink950 else Color.White,
+                        modifier = Modifier.padding(start = if (paused) 2.dp else 0.dp).size(18.dp),
+                    )
+                }
+                Text(formatClock(position), style = MaterialTheme.typography.titleSmall, color = Color.White)
+                ProgressLine(
+                    duration?.takeIf { it > 0 }?.let { (position / it).toFloat() } ?: 0f,
+                    Modifier.weight(1f),
+                    height = 5.dp,
                 )
-                Text(
-                    when {
-                        loading -> "Chargement…"
-                        paused -> "En pause · OK : reprendre · Haut : pistes et sous-titres"
-                        else -> "OK : pause · ◀ ▶ : 10 s · Haut : pistes et sous-titres"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = LumiereColors.TextMuted,
-                )
+                Text(duration?.let(::formatClock) ?: "--:--", style = MaterialTheme.typography.titleSmall, color = LumiereColors.Zinc300)
             }
+            Text(
+                when {
+                    loading -> "Chargement…"
+                    paused -> "En pause · OK : reprendre · Haut : pistes et sous-titres"
+                    else -> "OK : pause · ◀ ▶ : 10 s · Haut : pistes et sous-titres"
+                },
+                style = MaterialTheme.typography.bodyMedium.copy(shadow = LegibleShadow),
+                color = LumiereColors.Zinc300,
+                modifier = Modifier.padding(start = 16.dp),
+            )
         }
     }
 }
@@ -271,17 +323,12 @@ private fun ControlsOverlay(session: PlaybackSession?, position: Double, duratio
 private fun NextEpisodeCard(label: String, seconds: Int, onPlay: () -> Unit, onCancel: () -> Unit, modifier: Modifier = Modifier) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = modifier.padding(Safe.Horizontal).widthIn(max = 420.dp)
-            .background(LumiereColors.Ink850.copy(alpha = 0.95f), LumiereShapes.Card)
-            .padding(22.dp),
-    ) {
-        Text("Épisode suivant dans $seconds s", style = MaterialTheme.typography.titleMedium)
-        if (label.isNotBlank()) Text(label, color = LumiereColors.TextMuted, maxLines = 2)
+    GlassPanel(modifier = modifier.padding(horizontal = Safe.Horizontal, vertical = Safe.Vertical + 70.dp).widthIn(max = 440.dp), padding = 24.dp) {
+        Text("Épisode suivant dans $seconds s", style = MaterialTheme.typography.titleLarge, color = Color.White)
+        if (label.isNotBlank()) Text(label, color = LumiereColors.Zinc300, maxLines = 2)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = onPlay, modifier = Modifier.focusRequester(focus)) { Text("Lancer") }
-            OutlinedButton(onClick = onCancel) { Text("Annuler") }
+            LumiereButton("Lancer", onClick = onPlay, icon = LumiereIcons.SkipForward, style = GlassStyle.Primary, modifier = Modifier.focusRequester(focus))
+            LumiereButton("Annuler", onClick = onCancel, icon = LumiereIcons.X)
         }
     }
 }
@@ -290,14 +337,14 @@ private fun NextEpisodeCard(label: String, seconds: Int, onPlay: () -> Unit, onC
 private fun ErrorCard(message: String, onExit: () -> Unit, modifier: Modifier = Modifier) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(message) { runCatching { focus.requestFocus() } }
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+    GlassPanel(
+        modifier = modifier.widthIn(max = 640.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.widthIn(max = 640.dp)
-            .background(LumiereColors.Ink850, LumiereShapes.Card)
-            .padding(28.dp),
+        verticalSpacing = 18.dp,
+        padding = 32.dp,
     ) {
-        Text(message, style = MaterialTheme.typography.titleMedium)
-        Button(onClick = onExit, modifier = Modifier.focusRequester(focus)) { Text("Retour") }
+        Icon(LumiereIcons.CircleAlert, contentDescription = null, tint = LumiereColors.Error, modifier = Modifier.size(34.dp))
+        Text(message, style = MaterialTheme.typography.titleMedium, color = Color.White, textAlign = TextAlign.Center)
+        LumiereButton("Retour", onClick = onExit, icon = LumiereIcons.ChevronLeft, style = GlassStyle.Primary, modifier = Modifier.focusRequester(focus))
     }
 }

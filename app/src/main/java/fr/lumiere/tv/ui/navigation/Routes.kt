@@ -28,6 +28,6 @@ enum class Section(val label: String) {
     Home("Accueil"),
     Movies("Films"),
     Series("Séries"),
-    Library("Bibliothèque"),
+    Library("Ma bibliothèque"),
     Settings("Réglages"),
 }

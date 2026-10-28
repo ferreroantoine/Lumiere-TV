@@ -13,7 +13,6 @@ navigation = "2.10.2"
 lifecycle = "2.11.0"
 activityCompose = "1.13.0"
 coreKtx = "1.19.1"
-palette = "1.1.0"
 junit = "4.13.2"
 
 [libraries]
@@ -23,7 +22,6 @@ androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
-androidx-palette = { module = "androidx.palette:palette-ktx", version.ref = "palette" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-foundation = { module = "androidx.compose.foundation:foundation" }

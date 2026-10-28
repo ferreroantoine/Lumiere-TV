@@ -16,8 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import fr.lumiere.tv.player.subtitles.Cue
+import fr.lumiere.tv.ui.theme.Inter
 
-private val base = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, lineHeight = 38.sp)
+private val base = TextStyle(fontFamily = Inter, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, lineHeight = 38.sp)
 
 /** Sous-titres en bas de l'image, lisibles à 3 m : texte blanc cerné de noir. */
 @Composable

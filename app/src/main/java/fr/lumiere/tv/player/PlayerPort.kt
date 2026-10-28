@@ -12,7 +12,12 @@ interface PlayerPort {
 
     /** Position dans le flux chargé, en secondes. */
     val positionSec: Double
+
+    /** L'image avance (faux pendant un chargement, même si la lecture est demandée). */
     val isPlaying: Boolean
+
+    /** Lecture demandée par l'utilisateur, chargement en cours ou non (faux seulement en pause). */
+    val playWhenReady: Boolean
     fun setListener(listener: Listener)
     fun release()
 

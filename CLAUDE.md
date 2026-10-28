@@ -49,6 +49,12 @@ La lire avant toute modification de périmètre, d'architecture ou de lecture vi
   `mode: 'transcode'` si la lecture directe échoue.
 - Style « Lumière façon TV » : sombre, fond d'ambiance coloré par l'affiche en focus, panneaux
   translucides sans flou temps réel (le stick est peu puissant), focus agrandi et lumineux.
+- Design (2026-10-28) repris du web de Lumière (`apps/web/src/design`, `components/layout`) : verre
+  « Liquid Glass » sans flou (`ui/theme/Glass.kt` : teinte, reflet, liseré à 135°, variante dorée),
+  fond `.ambient` à trois halos dont la palette suit le calcul du web (`AmbientPalette`, testé),
+  police Inter variable (`res/font`), icônes Lucide (`LumiereIcons`), logo dessiné (`Logo.kt`).
+  Barre latérale maison flottante (pas `NavigationDrawer`) : icônes, libellés quand elle a le focus.
+  Licences : [docs/LICENCES-TIERCES.md](docs/LICENCES-TIERCES.md).
 
 ## Conventions
 
@@ -131,3 +137,10 @@ Correction à proposer côté Lumière : ajouter `-pix_fmt yuv420p` à ce job.
   navigation au pavé directionnel).
 - Le bandeau de l'accueil est fixe et présente le titre dont l'affiche a le focus.
 - Film : le fichier en cours de visionnage passe avant la copie de bibliothèque pour le bouton Lecture.
+- Pause : seule la lecture demandée compte (`playWhenReady`) ; un flux qui se charge après un saut
+  n'est pas une pause (libellé, touche OK, mise en arrière-plan).
+- Gauche depuis le bord d'une rangée ou d'une grille ouvre le menu (`leftExitsTo`), sinon la
+  recherche du focus remontait vers un bouton du bandeau. La fiche défile au minimum
+  (`LocalBringIntoViewSpec`) : le défilement « pivot » de Compose sur TV coupait le titre.
+- Le stick ne décode pas au-delà du 1080p : un fichier 4K échoue tant que Lumière borne la
+  conversion par la hauteur seule (2160x1080 pour du 2:1). Correction à proposer côté Lumière.

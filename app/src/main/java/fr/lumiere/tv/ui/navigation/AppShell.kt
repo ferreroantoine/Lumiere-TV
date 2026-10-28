@@ -1,64 +1,63 @@
 package fr.lumiere.tv.ui.navigation
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import androidx.tv.material3.Icon
-import androidx.tv.material3.NavigationDrawer
-import androidx.tv.material3.NavigationDrawerItem
-import androidx.tv.material3.Text
 import fr.lumiere.tv.data.api.MediaRef
+import fr.lumiere.tv.data.api.TitleKind
 import fr.lumiere.tv.data.server.CheckResult
 import fr.lumiere.tv.data.server.message
 import fr.lumiere.tv.ui.appContainer
+import fr.lumiere.tv.ui.catalog.CatalogScreen
+import fr.lumiere.tv.ui.components.AmbientBackground
 import fr.lumiere.tv.ui.components.EmptyMessage
 import fr.lumiere.tv.ui.components.ErrorScreen
-import androidx.compose.foundation.focusGroup
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.focus.focusRequester
-import fr.lumiere.tv.ui.components.AmbientBackground
 import fr.lumiere.tv.ui.components.LoadingScreen
+import fr.lumiere.tv.ui.components.LocalSidebarFocus
 import fr.lumiere.tv.ui.home.HomeScreen
-import fr.lumiere.tv.ui.title.TitleScreen
-import fr.lumiere.tv.ui.player.PlayerScreen
 import fr.lumiere.tv.ui.library.LibraryScreen
-import fr.lumiere.tv.ui.catalog.CatalogScreen
+import fr.lumiere.tv.ui.player.PlayerScreen
 import fr.lumiere.tv.ui.search.SearchScreen
-import fr.lumiere.tv.data.api.TitleKind
-import fr.lumiere.tv.ui.theme.LumiereColors
-import androidx.tv.material3.NavigationDrawerItemDefaults
 import fr.lumiere.tv.ui.settings.SettingsScreen
 import fr.lumiere.tv.ui.setup.SetupScreen
 import fr.lumiere.tv.ui.theme.Safe
+import fr.lumiere.tv.ui.title.TitleScreen
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private sealed interface Startup {
     data object Loading : Startup
@@ -71,7 +70,7 @@ private sealed interface Startup {
 @Composable
 fun AppShell() {
     val container = appContainer()
-    var startup by androidx.compose.runtime.remember { mutableStateOf<Startup>(Startup.Loading) }
+    var startup by remember { mutableStateOf<Startup>(Startup.Loading) }
     var attempt by rememberSaveable { mutableStateOf(0) }
 
     LaunchedEffect(attempt) {
@@ -88,12 +87,18 @@ fun AppShell() {
     }
 
     when (val s = startup) {
-        Startup.Loading -> LoadingScreen()
-        is Startup.Unreachable -> ErrorScreen(
-            message = s.message,
-            onRetry = { attempt++ },
-            onChangeServer = { startup = Startup.NeedsSetup },
-        )
+        Startup.Loading -> Box {
+            AmbientBackground(null)
+            LoadingScreen()
+        }
+        is Startup.Unreachable -> Box {
+            AmbientBackground(null)
+            ErrorScreen(
+                message = s.message,
+                onRetry = { attempt++ },
+                onChangeServer = { startup = Startup.NeedsSetup },
+            )
+        }
         Startup.NeedsSetup -> AppNavHost(start = Route.Setup)
         Startup.Ready -> AppNavHost(start = Route.Main)
     }
@@ -112,7 +117,7 @@ private fun AppNavHost(start: Route) {
         composable<Route.Main> { MainScreen(nav) }
         composable<Route.Title> { entry ->
             val route = entry.toRoute<Route.Title>()
-            val navigator = androidx.compose.runtime.remember(nav) { Navigator(nav) }
+            val navigator = remember(nav) { Navigator(nav) }
             key(route.id) { TitleScreen(route.id, route.autoPlay, navigator) }
         }
         composable<Route.Player> { entry ->
@@ -123,7 +128,11 @@ private fun AppNavHost(start: Route) {
 }
 
 /** Actions de navigation offertes aux sections. */
-class Navigator(private val nav: NavHostController, private val ambient: (String?) -> Unit = {}) {
+class Navigator(
+    private val nav: NavHostController,
+    private val ambient: (String?) -> Unit = {},
+    private val backdrop: (String?) -> Unit = {},
+) {
     fun openTitle(id: Int) = nav.navigate(Route.Title(id))
 
     /** Ouvre la fiche et lance aussitôt la lecture (version préférée ou reprise). */
@@ -133,59 +142,78 @@ class Navigator(private val nav: NavHostController, private val ambient: (String
 
     /** Image dont la couleur teinte le fond d'ambiance. */
     fun setAmbient(imageUrl: String?) = ambient(imageUrl)
+
+    /** Illustration plein cadre derrière l'Accueil (`null` : aucune). */
+    fun setBackdrop(imageUrl: String?) = backdrop(imageUrl)
 }
 
-private fun Section.icon(): ImageVector = when (this) {
-    Section.Search -> Icons.Default.Search
-    Section.Home -> Icons.Default.Home
-    Section.Movies -> Icons.Default.Star
-    Section.Series -> Icons.Default.List
-    Section.Library -> Icons.Default.CheckCircle
-    Section.Settings -> Icons.Default.Settings
-}
+/** Écart entre le bord de l'écran et la barre latérale (ses icônes restent dans la zone de sécurité). */
+private val SidebarInset = 28.dp
+
+/** Temps laissé à la section choisie pour se composer avant d'y donner le focus. */
+private const val SECTION_FOCUS_DELAY_MS = 80L
 
 @Composable
 private fun MainScreen(nav: NavHostController) {
     var section by rememberSaveable { mutableStateOf(Section.Home) }
     var ambient by rememberSaveable { mutableStateOf<String?>(null) }
-    val navigator = androidx.compose.runtime.remember(nav) { Navigator(nav) { ambient = it } }
+    var backdrop by rememberSaveable { mutableStateOf<String?>(null) }
+    val navigator = remember(nav) { Navigator(nav, ambient = { ambient = it }, backdrop = { backdrop = it }) }
 
     // Retour : d'une section vers l'Accueil ; depuis l'Accueil, l'appli se ferme.
     BackHandler(enabled = section != Section.Home) { section = Section.Home }
 
-    // En entrant dans le menu, le focus va sur la section affichée.
-    val itemFocus = androidx.compose.runtime.remember { Section.entries.associateWith { FocusRequester() } }
+    val itemFocus = remember { Section.entries.associateWith { FocusRequester() } }
+    val contentFocus = remember { FocusRequester() }
+    var sidebarFocused by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    AmbientBackground(ambient)
-    NavigationDrawer(
-        drawerContent = { _ ->
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-                modifier = Modifier.fillMaxHeight().padding(vertical = Safe.Vertical, horizontal = 12.dp)
-                    .focusProperties { onEnter = { itemFocus.getValue(section).requestFocus() } }
-                    .focusGroup()
-                    .selectableGroup(),
-            ) {
-                Section.entries.forEach { item ->
-                    NavigationDrawerItem(
-                        selected = section == item,
-                        onClick = { section = item },
-                        modifier = Modifier.focusRequester(itemFocus.getValue(item)),
-                        leadingContent = { Icon(item.icon(), contentDescription = null) },
-                        colors = NavigationDrawerItemDefaults.colors(
-                            focusedContainerColor = LumiereColors.Brand400,
-                            focusedContentColor = LumiereColors.Ink950,
-                            selectedContainerColor = LumiereColors.Ink700,
-                            selectedContentColor = LumiereColors.Brand200,
-                        ),
-                    ) { Text(item.label) }
-                }
+    Box(Modifier.fillMaxSize()) {
+        AmbientBackground(ambient, backdropUrl = backdrop.takeIf { section == Section.Home })
+        Box(
+            Modifier.fillMaxSize()
+                .padding(start = SidebarInset + SidebarSize.Collapsed + 28.dp, end = Safe.Horizontal, top = Safe.Vertical)
+                .focusRequester(contentFocus)
+                // Revenir du menu ramène le focus sur l'élément quitté.
+                .focusRestorer()
+                .focusGroup(),
+        ) {
+            CompositionLocalProvider(LocalSidebarFocus provides itemFocus.getValue(section)) {
+                SectionContent(section, navigator)
             }
-        },
-    ) {
-        Box(Modifier.fillMaxSize().padding(start = 24.dp, end = Safe.Horizontal, top = Safe.Vertical, bottom = Safe.Vertical)) {
-            SectionContent(section, navigator)
         }
+        // Menu ouvert : voile sombre à gauche, le menu se détache du contenu.
+        AnimatedVisibility(sidebarFocused, enter = fadeIn(), exit = fadeOut()) {
+            Box(
+                Modifier.fillMaxSize().background(
+                    Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.78f), 0.5f to Color.Transparent),
+                ),
+            )
+        }
+        Sidebar(
+            section = section,
+            expanded = sidebarFocused,
+            itemFocus = itemFocus,
+            onSelect = {
+                section = it
+                // La section choisie s'ouvre et prend le focus (le menu se referme).
+                scope.launch {
+                    delay(SECTION_FOCUS_DELAY_MS)
+                    runCatching { contentFocus.requestFocus() }
+                }
+            },
+            modifier = Modifier.padding(start = SidebarInset, top = 18.dp, bottom = 18.dp)
+                .onFocusChanged { sidebarFocused = it.hasFocus }
+                // Le menu ouvert recouvre le contenu : Droite y retourne directement.
+                .onPreviewKeyEvent { event ->
+                    if (event.key == Key.DirectionRight && event.type == KeyEventType.KeyDown) {
+                        runCatching { contentFocus.requestFocus() }
+                        true
+                    } else {
+                        false
+                    }
+                },
+        )
     }
 }
 

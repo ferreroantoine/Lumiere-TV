@@ -60,6 +60,11 @@ class ExoPlayerPort(context: Context, httpClient: OkHttpClient) : PlayerPort {
 
     override val isPlaying: Boolean get() = exoPlayer.isPlaying
 
+    override val playWhenReady: Boolean get() = exoPlayer.playWhenReady
+
+    /** Le flux se charge (démarrage, saut, coupure) : l'image attend des données. */
+    val isBuffering: Boolean get() = exoPlayer.playbackState == Player.STATE_BUFFERING
+
     override fun setListener(listener: PlayerPort.Listener) {
         this.listener = listener
     }

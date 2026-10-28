@@ -24,12 +24,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.graphics.Color
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import fr.lumiere.tv.data.api.TitleSummary
+import fr.lumiere.tv.ui.components.LumiereButton
 import fr.lumiere.tv.ui.home.metaLine
 import fr.lumiere.tv.ui.theme.LumiereColors
+import fr.lumiere.tv.ui.theme.LumiereIcons
 import fr.lumiere.tv.ui.UiState
 import fr.lumiere.tv.ui.appContainer
 import fr.lumiere.tv.ui.components.EmptyMessage
@@ -68,16 +70,18 @@ fun SearchScreen(navigator: Navigator) {
     }
 
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text("Rechercher", style = MaterialTheme.typography.headlineLarge, color = Color.White)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             TvTextField(
                 value = text,
                 onValueChange = { text = it; vm.setQuery(it) },
-                placeholder = "Titre d'un film ou d'une série",
+                placeholder = "Rechercher un film, une série…",
                 imeAction = ImeAction.Search,
+                leadingIcon = LumiereIcons.Search,
                 modifier = Modifier.weight(1f).focusRequester(fieldFocus),
             )
             if (voiceAvailable) {
-                OutlinedButton(onClick = { voice.launch(voiceIntent) }) { Text("Recherche vocale") }
+                LumiereButton("Recherche vocale", onClick = { voice.launch(voiceIntent) }, icon = LumiereIcons.AudioLines)
             }
         }
         when (val s = state) {
@@ -88,8 +92,9 @@ fun SearchScreen(navigator: Navigator) {
                     Text(
                         focused?.let { "${it.title}  ·  ${it.metaLine()}" } ?: "${s.value.size} résultat(s)",
                         style = MaterialTheme.typography.titleMedium,
-                        color = LumiereColors.Brand200,
+                        color = LumiereColors.Zinc200,
                         maxLines = 1,
+                        modifier = Modifier.padding(start = 4.dp),
                     )
                     PosterGrid(
                         titles = s.value,

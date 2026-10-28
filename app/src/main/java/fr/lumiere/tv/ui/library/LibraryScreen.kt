@@ -30,7 +30,8 @@ import fr.lumiere.tv.ui.components.MediaRow
 import fr.lumiere.tv.ui.components.PosterCard
 import fr.lumiere.tv.ui.components.WideCard
 import fr.lumiere.tv.ui.containerViewModel
-import fr.lumiere.tv.ui.home.episodeLabel
+import androidx.compose.ui.graphics.Color
+import fr.lumiere.tv.ui.home.fileLine
 import fr.lumiere.tv.ui.navigation.Navigator
 
 private fun LibraryItem.progress(): Float? =
@@ -72,7 +73,7 @@ private fun LibraryRows(content: LibraryContent, navigator: Navigator) {
         contentPadding = PaddingValues(bottom = 48.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
-        item { Text("Bibliothèque", style = MaterialTheme.typography.headlineMedium) }
+        item { Text("Ma bibliothèque", style = MaterialTheme.typography.headlineLarge, color = Color.White) }
         if (content.movies.isNotEmpty()) {
             item(key = "films") {
                 MediaRow("Films") {
@@ -95,7 +96,7 @@ private fun LibraryRows(content: LibraryContent, navigator: Navigator) {
                     items(content.episodes, key = { it.id }) { item ->
                         WideCard(
                             title = item.title,
-                            subtitle = item.episodeLabel(),
+                            subtitle = item.fileLine(),
                             imageUrl = (item.backdropUrl ?: item.posterUrl)?.let(api::absoluteUrl),
                             progress = item.progress(),
                             onClick = { navigator.play(MediaRef.Library(item.id), item.titleId) },

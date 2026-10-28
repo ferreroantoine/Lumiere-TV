@@ -22,9 +22,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
-import androidx.tv.material3.OutlinedButton
-import androidx.tv.material3.Text
 import fr.lumiere.tv.data.api.LibraryItem
 import fr.lumiere.tv.data.api.MediaRef
 import fr.lumiere.tv.data.api.TitleKind
@@ -32,14 +29,18 @@ import fr.lumiere.tv.data.api.TitleSummary
 import fr.lumiere.tv.ui.UiState
 import fr.lumiere.tv.ui.appContainer
 import fr.lumiere.tv.ui.components.ErrorScreen
+import fr.lumiere.tv.ui.components.GlassStyle
 import fr.lumiere.tv.ui.components.Hero
 import fr.lumiere.tv.ui.components.HeroText
 import fr.lumiere.tv.ui.components.LoadingScreen
+import fr.lumiere.tv.ui.components.LumiereButton
 import fr.lumiere.tv.ui.components.MediaRow
 import fr.lumiere.tv.ui.components.PosterCard
 import fr.lumiere.tv.ui.components.WideCard
 import fr.lumiere.tv.ui.containerViewModel
+import fr.lumiere.tv.ui.formatSize
 import fr.lumiere.tv.ui.navigation.Navigator
+import fr.lumiere.tv.ui.theme.LumiereIcons
 
 /** Ligne d'informations d'un titre : « Film · 2024 · ★ 7,4 · Science-fiction ». */
 fun TitleSummary.metaLine(): String = buildList {
@@ -51,6 +52,13 @@ fun TitleSummary.metaLine(): String = buildList {
 
 fun LibraryItem.episodeLabel(): String? =
     if (season != null && episode != null) "S$season É$episode" else null
+
+/** Sous-titre d'un fichier de la bibliothèque, comme sur le web : « S1 É1 · 2160p · 7,98 Go ». */
+fun LibraryItem.fileLine(): String =
+    listOfNotNull(episodeLabel(), release.resolution, formatSize(size)).joinToString(" · ")
+
+/** Texte du bandeau pour un titre du catalogue. */
+fun TitleSummary.heroText(): HeroText = HeroText(title, kind, year, rating, genres.take(2), overview)
 
 @Composable
 fun HomeScreen(navigator: Navigator) {
@@ -79,19 +87,23 @@ private fun HomeContentView(content: HomeContent, navigator: Navigator) {
     var shown by remember(content.featured) { mutableStateOf(content.featured) }
     val playFocus = remember { FocusRequester() }
     LaunchedEffect(content.featured) { runCatching { playFocus.requestFocus() } }
-    LaunchedEffect(shown) { navigator.setAmbient(shown?.posterUrl?.let(api::absoluteUrl)) }
+    LaunchedEffect(shown) {
+        navigator.setAmbient(shown?.posterUrl?.let(api::absoluteUrl))
+        navigator.setBackdrop((shown?.backdropUrl ?: shown?.posterUrl)?.let(api::absoluteUrl))
+    }
 
     Column(Modifier.fillMaxSize()) {
         shown?.let { title ->
-            Hero(
-                imageUrl = title.backdropUrl?.let(api::absoluteUrl),
-                text = HeroText(title.title, title.metaLine(), title.overview),
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 4.dp)) {
-                    Button(onClick = { navigator.playTitle(title.id) }, modifier = Modifier.focusRequester(playFocus)) {
-                        Text("Lecture")
-                    }
-                    OutlinedButton(onClick = { navigator.openTitle(title.id) }) { Text("Fiche") }
+            Hero(text = title.heroText()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(top = 6.dp)) {
+                    LumiereButton(
+                        "Lecture",
+                        onClick = { navigator.playTitle(title.id) },
+                        icon = LumiereIcons.Play,
+                        style = GlassStyle.Primary,
+                        modifier = Modifier.focusRequester(playFocus),
+                    )
+                    LumiereButton("Fiche", onClick = { navigator.openTitle(title.id) }, icon = LumiereIcons.Info)
                 }
             }
         }
@@ -133,9 +145,10 @@ private fun HomeRows(
             item(key = "library") {
                 MediaRow("Dans ma bibliothèque") {
                     items(content.library, key = { it.id }) { item ->
-                        PosterCard(
-                            title = listOfNotNull(item.title, item.episodeLabel()).joinToString(" · "),
-                            imageUrl = item.posterUrl?.let(url),
+                        WideCard(
+                            title = item.title,
+                            subtitle = item.fileLine(),
+                            imageUrl = (item.backdropUrl ?: item.posterUrl)?.let(url),
                             progress = item.watch?.let { w -> w.duration?.takeIf { it > 0 }?.let { (w.position / it).toFloat() } },
                             onClick = { navigator.play(MediaRef.Library(item.id), item.titleId) },
                         )

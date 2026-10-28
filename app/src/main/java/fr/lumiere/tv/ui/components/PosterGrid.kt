@@ -12,7 +12,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
@@ -45,10 +44,12 @@ fun PosterGrid(
         state = state,
         horizontalArrangement = Arrangement.spacedBy(22.dp),
         verticalArrangement = Arrangement.spacedBy(26.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 48.dp, start = 4.dp, end = 4.dp),
-        // En bout de ligne, Droite ne doit pas faire sauter le focus hors de la grille.
+        // Marge pour l'affiche agrandie au focus et son halo.
+        contentPadding = PaddingValues(top = 16.dp, bottom = 48.dp, start = 12.dp, end = 12.dp),
+        // En bout de ligne, Droite ne doit pas faire sauter le focus hors de la grille ;
+        // Gauche, depuis la première colonne, ouvre le menu.
         modifier = modifier
-            .focusProperties { onExit = { if (requestedFocusDirection == FocusDirection.Right) cancelFocusChange() } }
+            .leftExitsTo(LocalSidebarFocus.current) { it == FocusDirection.Right }
             .focusGroup(),
     ) {
         itemsIndexed(titles, key = { _, t -> t.id }) { index, title ->
