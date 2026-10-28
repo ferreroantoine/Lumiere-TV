@@ -49,6 +49,7 @@ import fr.lumiere.tv.ui.components.AmbientBackground
 import fr.lumiere.tv.ui.components.LoadingScreen
 import fr.lumiere.tv.ui.home.HomeScreen
 import fr.lumiere.tv.ui.title.TitleScreen
+import fr.lumiere.tv.ui.library.LibraryScreen
 import fr.lumiere.tv.ui.catalog.CatalogScreen
 import fr.lumiere.tv.ui.search.SearchScreen
 import fr.lumiere.tv.data.api.TitleKind
@@ -194,6 +195,7 @@ private fun SectionContent(section: Section, navigator: Navigator) {
         Section.Movies -> CatalogScreen(TitleKind.MOVIE, navigator)
         Section.Series -> CatalogScreen(TitleKind.SERIES, navigator)
         Section.Search -> SearchScreen(navigator)
+        Section.Library -> LibraryScreen(navigator)
         Section.Settings -> SettingsScreen(onChangeServer = navigator::changeServer)
         else -> EmptyMessage("${section.label} : bientôt disponible")
     }

@@ -19,7 +19,8 @@ fun MediaRow(title: String, modifier: Modifier = Modifier, content: LazyListScop
         Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 14.dp))
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(22.dp),
-            contentPadding = PaddingValues(vertical = 12.dp, horizontal = 4.dp),
+            // Marge pour la carte agrandie au focus et son halo.
+            contentPadding = PaddingValues(vertical = 14.dp, horizontal = 14.dp),
             content = content,
         )
     }
