@@ -117,6 +117,46 @@ class PlaybackControllerTest {
     }
 
     @Test
+    fun avanceRapideSArreteAvantLaFin() = runTest {
+        origin = "0"
+        sessions += session("s1", "transcode", duration = 40.0)
+        val player = FakePlayer()
+        val c = controller(player)
+        c.start(MediaRef.Library(3))
+        c.seekTo(45.0)
+        assertTrue(player.loads.last().first.contains("start=37&"))
+    }
+
+    @Test
+    fun erreurDansLesDernieresSecondesVautFin() = runTest {
+        origin = "0"
+        sessions += session("s1", "transcode", duration = 40.0)
+        val player = FakePlayer()
+        val c = controller(player)
+        c.start(MediaRef.Library(3))
+        player.positionSec = 38.5
+        player.registered!!.onError(IllegalStateException("fin de flux"))
+        assertEquals(true, c.state.value.ended)
+        assertNull(c.state.value.error)
+    }
+
+    @Test
+    fun origineNegativeNeDonnePasDePositionNegative() = runTest {
+        // Le serveur peut annoncer un départ réel juste avant zéro (image clé).
+        origin = "-0.083"
+        sessions += session("s1", "remux")
+        sessions += session("s2", "transcode")
+        val player = FakePlayer()
+        val c = controller(player)
+        c.start(MediaRef.Library(3))
+        assertEquals(0.0, c.position, 0.0)
+        player.registered!!.onError(IllegalStateException("décodeur"))
+        advanceUntilIdle()
+        waitFor(2, isCreate)
+        assertTrue(player.loads.none { it.first.contains("start=-") })
+    }
+
+    @Test
     fun replisEnConversionUneSeuleFois() = runTest {
         sessions += session("s1", "direct")
         sessions += session("s2", "transcode")
@@ -133,6 +173,21 @@ class PlaybackControllerTest {
         advanceUntilIdle()
         assertEquals(2, requests.count(isCreate))
         assertNotNull(c.state.value.error)
+    }
+
+    @Test
+    fun replisEnConversionDepuisLeRemux() = runTest {
+        // Vidéo copiée telle quelle (remux) que le décodeur refuse : HEVC 10 bits par exemple.
+        sessions += session("s1", "remux")
+        sessions += session("s2", "transcode")
+        val player = FakePlayer()
+        val c = controller(player)
+        c.start(MediaRef.Library(3))
+        player.registered!!.onError(IllegalStateException("décodeur"))
+        advanceUntilIdle()
+        val creates = waitFor(2, isCreate)
+        assertEquals(2, creates.size)
+        assertTrue(creates[1].body!!.utf8().contains(""""mode":"transcode""""))
     }
 
     @Test

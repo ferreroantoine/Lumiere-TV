@@ -1,6 +1,7 @@
 package fr.lumiere.tv.player
 
 import android.content.Context
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -38,12 +39,13 @@ class ExoPlayerPort(context: Context, httpClient: OkHttpClient) : PlayerPort {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                listener?.onError(error)
+                listener?.onError(PlayerFailure(error.frenchMessage(), error))
             }
         })
     }
 
     override fun load(url: String, startPositionSec: Double) {
+        Log.i("Lumiere", "Flux : $url (départ ${startPositionSec}s)")
         exoPlayer.setMediaItem(MediaItem.fromUri(url), (startPositionSec * 1000).toLong())
         exoPlayer.prepare()
     }
@@ -63,4 +65,16 @@ class ExoPlayerPort(context: Context, httpClient: OkHttpClient) : PlayerPort {
     }
 
     override fun release() = exoPlayer.release()
+}
+
+/** Erreur du lecteur avec un message compréhensible. */
+class PlayerFailure(message: String, cause: Throwable) : Exception(message, cause)
+
+/** Familles de codes d'erreur de Media3 : 2xxx réseau, 3xxx lecture du fichier, 4xxx décodage. */
+private fun PlaybackException.frenchMessage(): String = when (errorCode / 1000) {
+    2 -> "le flux vidéo ne répond plus (réseau ou serveur)."
+    3 -> "le fichier vidéo est illisible."
+    4 -> "cet appareil ne sait pas décoder cette vidéo."
+    5 -> "la sortie audio refuse ce format."
+    else -> "erreur du lecteur ($errorCodeName)."
 }

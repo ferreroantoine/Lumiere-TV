@@ -55,9 +55,9 @@ class PlaybackController(
         player.setListener(this)
     }
 
-    /** Position dans le média, en secondes. */
+    /** Position dans le média, en secondes (jamais négative : l'origine peut précéder zéro). */
     val position: Double
-        get() = if (session?.seek == "restart") origin + player.positionSec else player.positionSec
+        get() = (if (session?.seek == "restart") origin + player.positionSec else player.positionSec).coerceAtLeast(0.0)
 
     val currentSession: PlaybackSession? get() = session
 
@@ -84,7 +84,9 @@ class PlaybackController(
 
     suspend fun seekTo(target: Double) {
         val s = session ?: return
-        val clamped = target.coerceIn(0.0, s.duration ?: Double.MAX_VALUE)
+        // Un flux converti relancé tout près de la fin serait vide : on s'arrête un peu avant.
+        val max = s.duration?.let { (it - END_MARGIN_SEC).coerceAtLeast(0.0) } ?: Double.MAX_VALUE
+        val clamped = target.coerceIn(0.0, max)
         if (s.seek == "native") player.seekTo(clamped) else load(clamped)
         _state.update { it.copy(position = position) }
     }
@@ -151,7 +153,14 @@ class PlaybackController(
     override fun onError(error: Throwable) {
         val s = session
         val m = media
-        if (s != null && m != null && s.mode == "direct" && !fallbackTried) {
+        // Fin d'un flux converti parfois signalée comme une erreur : c'est la fin du média.
+        val duration = s?.duration
+        if (duration != null && position >= duration - END_MARGIN_SEC) {
+            onEnded()
+            return
+        }
+        // Lecture directe ou remux (vidéo copiée) refusée par le décodeur : la conversion réencode la vidéo.
+        if (s != null && m != null && s.mode != "transcode" && !fallbackTried) {
             fallbackTried = true
             val at = position
             scope.launch { start(m, mode = "transcode", at = at) }
@@ -170,8 +179,9 @@ class PlaybackController(
         }
     }
 
-    private suspend fun load(at: Double) {
+    private suspend fun load(requested: Double) {
         val s = session ?: return
+        val at = requested.coerceAtLeast(0.0)
         val url = api.absoluteUrl(s.streamUrl)
         if (s.seek == "native") {
             origin = 0.0
@@ -219,6 +229,7 @@ class PlaybackController(
         const val PROGRESS_INTERVAL_MS = 10_000L
         const val NEXT_WINDOW_SEC = 20.0
         const val NEXT_COUNTDOWN = 10
+        const val END_MARGIN_SEC = 3.0
 
         /** Secondes sans décimales inutiles : 600.0 donne « 600 », 12.5 donne « 12.5 ». */
         fun formatSeconds(value: Double): String =

@@ -10,6 +10,9 @@ import fr.lumiere.tv.data.prefs.ServerPrefs
 import fr.lumiere.tv.data.prefs.ServerStore
 import fr.lumiere.tv.data.server.ServerAddress
 import fr.lumiere.tv.data.server.ServerCheck
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -20,6 +23,10 @@ private val Context.serverDataStore by preferencesDataStore(name = "serveur")
 
 /** Racine de composition : crée et câble les services de l'appli. */
 class AppContainer(context: Context) {
+    val appContext: Context = context.applicationContext
+
+    /** Travaux qui doivent survivre à la fermeture d'un écran (fin de session de lecture). */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     /** Client HTTP unique : API, images, flux vidéo et sous-titres. */
     val httpClient: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)

@@ -49,6 +49,7 @@ import fr.lumiere.tv.ui.components.AmbientBackground
 import fr.lumiere.tv.ui.components.LoadingScreen
 import fr.lumiere.tv.ui.home.HomeScreen
 import fr.lumiere.tv.ui.title.TitleScreen
+import fr.lumiere.tv.ui.player.PlayerScreen
 import fr.lumiere.tv.ui.library.LibraryScreen
 import fr.lumiere.tv.ui.catalog.CatalogScreen
 import fr.lumiere.tv.ui.search.SearchScreen
@@ -116,7 +117,7 @@ private fun AppNavHost(start: Route) {
         }
         composable<Route.Player> { entry ->
             val route = entry.toRoute<Route.Player>()
-            EmptyMessage("Lecture de ${route.media} : bientôt disponible")
+            PlayerScreen(route.media, onExit = { nav.popBackStack() })
         }
     }
 }

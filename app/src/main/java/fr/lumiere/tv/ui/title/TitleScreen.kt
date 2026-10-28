@@ -28,6 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
@@ -109,7 +114,18 @@ private fun TitleContent(details: TitleDetails, action: PlayAction, vm: TitleVie
     LaunchedEffect(Unit) { runCatching { playFocus.requestFocus() } }
     BackHandler(enabled = versions != null) { vm.closeVersions() }
 
-    Box(Modifier.fillMaxSize().background(LumiereColors.Ink900)) {
+    Box(
+        Modifier.fillMaxSize().background(LumiereColors.Ink900)
+            // Retour ferme le panneau des versions dès le premier appui.
+            .onPreviewKeyEvent { event ->
+                if (versions != null && event.key == Key.Back) {
+                    if (event.type == KeyEventType.KeyUp) vm.closeVersions()
+                    true
+                } else {
+                    false
+                }
+            },
+    ) {
         val backdrop = (details.backdropUrl ?: details.posterUrl)?.let(api::absoluteUrl)
         if (backdrop != null) {
             AsyncImage(backdrop, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
