@@ -78,14 +78,21 @@ La lire avant toute modification de périmètre, d'architecture ou de lecture vi
 - **PC d'entreprise** : proxy `<proxy de l entreprise>` avec inspection HTTPS. Gradle passe par
   `~/.gradle/gradle.properties` (proxy + `javax.net.ssl.trustStoreType=Windows-ROOT`) ; `sdkmanager`
   par `SDKMANAGER_OPTS` avec les mêmes options.
-- **FortiClient bloque `adb.exe` vers le réseau local** : `adb connect 192.168.1.160:5555` échoue
-  depuis ce PC alors que le stick répond. Ne pas contourner (contrôle de sécurité de l'entreprise) :
-  vérifier sur l'émulateur, et installer sur le stick depuis un autre PC ou par APK copié.
+- **FortiClient** bloquait `adb.exe` vers le réseau local. Depuis que l'utilisateur l'a désactivé
+  (2026-10-28), `adb connect 192.168.1.160:5555` fonctionne et le PC est autorisé sur le stick. Si le
+  blocage revient, ne pas le contourner (contrôle de sécurité de l'entreprise) : émulateur, ou APK
+  copié sur le stick.
+- Essais sur le stick sans ouvrir le pare-feu Windows : `adb -s 192.168.1.160:5555 reverse tcp:8484 tcp:8484`
+  puis l'adresse `127.0.0.1` dans l'appli (comme pour l'émulateur).
 - L'émulateur n'atteint pas le PC par `10.0.2.2` : utiliser `adb reverse tcp:8484 tcp:8484` et
   l'adresse `127.0.0.1` dans l'appli.
 - Capacités constatées sur l'émulateur : vidéo `h264, hevc, vp9`, audio `aac, mp3, opus, flac`. Son
   décodeur HEVC refuse le 10 bits : la lecture repasse alors en conversion (cas couvert).
-- Version d'Android du stick et ses capacités réelles : inconnues (pas d'accès `adb`).
+- **Stick** : Xiaomi `MiTV-AESP0` (nom de code `aquaman`), Android 9 (API 28). Capacités déclarées :
+  vidéo `h264, hevc, vp9`, audio `aac, mp3, opus, flac, ac3, eac3`. Son décodeur matériel
+  `OMX.amlogic.hevc.decoder.awesome` lit le HEVC 10 bits HDR : la démo « Cosmos Odyssey » (HEVC 10 bits
+  + E-AC3) part en lecture directe. `screencap` montre l'image en noir (plan vidéo matériel) : seuls
+  les éléments de l'interface apparaissent sur les captures.
 
 ## Commandes
 
