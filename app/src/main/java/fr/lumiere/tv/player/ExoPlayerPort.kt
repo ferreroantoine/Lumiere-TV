@@ -39,7 +39,7 @@ class ExoPlayerPort(context: Context, httpClient: OkHttpClient) : PlayerPort {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                listener?.onError(PlayerFailure(error.frenchMessage(), error))
+                listener?.onError(PlayerFailure(error.frenchMessage(), network = error.errorCode / 1000 == 2, cause = error))
             }
         })
     }
@@ -66,9 +66,6 @@ class ExoPlayerPort(context: Context, httpClient: OkHttpClient) : PlayerPort {
 
     override fun release() = exoPlayer.release()
 }
-
-/** Erreur du lecteur avec un message compréhensible. */
-class PlayerFailure(message: String, cause: Throwable) : Exception(message, cause)
 
 /** Familles de codes d'erreur de Media3 : 2xxx réseau, 3xxx lecture du fichier, 4xxx décodage. */
 private fun PlaybackException.frenchMessage(): String = when (errorCode / 1000) {

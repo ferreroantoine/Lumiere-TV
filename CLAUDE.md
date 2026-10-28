@@ -115,5 +115,12 @@ Correction à proposer côté Lumière : ajouter `-pix_fmt yuv420p` à ce job.
 - La position n'est jamais négative (le serveur peut annoncer une origine de flux juste avant zéro).
 - L'avance rapide s'arrête 3 s avant la fin ; une erreur du lecteur dans les 3 dernières secondes
   vaut fin du média.
+- Lecteur aligné sur le lecteur web de Lumière (`apps/web/src/features/player/PlayerPage.tsx`) :
+  origine provisoire posée avant l'arrivée de `/origin`, réponses d'un ancien flux ignorées, appuis
+  d'avance groupés (350 ms), relance plus loin si l'image clé précède la position quittée, reprise
+  au même endroit après une coupure réseau (3 fois par minute au plus), garde pendant le passage à
+  l'épisode suivant.
+- Les touches du lecteur ne s'appliquent que quand l'image a le focus (cartes et panneau gardent la
+  navigation au pavé directionnel).
 - Le bandeau de l'accueil est fixe et présente le titre dont l'affiche a le focus.
 - Film : le fichier en cours de visionnage passe avant la copie de bibliothèque pour le bouton Lecture.

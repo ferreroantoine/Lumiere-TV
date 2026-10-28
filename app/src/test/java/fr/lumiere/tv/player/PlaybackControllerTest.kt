@@ -5,8 +5,11 @@ import fr.lumiere.tv.data.api.MediaRef
 import fr.lumiere.tv.testing.api
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
@@ -31,6 +34,11 @@ class PlaybackControllerTest {
     /** Sessions renvoyées dans l'ordre par POST /api/playback/sessions. */
     private val sessions = ArrayDeque<String>()
     private var origin = "598.7"
+
+    /** Origines renvoyées dans l'ordre (sinon [origin]), délai de réponse de /origin et des créations. */
+    private val origins = ArrayDeque<String>()
+    private var originDelayMs = 0L
+    private val createDelays = ArrayDeque<Long>()
     private var now = 0L
 
     private class FakePlayer : PlayerPort {
@@ -60,8 +68,9 @@ class PlaybackControllerTest {
                 requests += request
                 val path = request.url.encodedPath
                 return when {
-                    request.method == "POST" && path == "/api/playback/sessions" -> json(sessions.removeFirst())
-                    path.endsWith("/origin") -> json("""{"start":$origin}""")
+                    request.method == "POST" && path == "/api/playback/sessions" ->
+                        json(sessions.removeFirst(), createDelays.removeFirstOrNull() ?: 0)
+                    path.endsWith("/origin") -> json("""{"start":${origins.removeFirstOrNull() ?: origin}}""", originDelayMs)
                     else -> MockResponse.Builder().code(204).build()
                 }
             }
@@ -71,7 +80,13 @@ class PlaybackControllerTest {
 
     @After fun tearDown() = server.close()
 
-    private fun json(body: String) = MockResponse.Builder().code(200).setHeader("Content-Type", "application/json").body(body).build()
+    private fun json(body: String, delayMs: Long = 0) = MockResponse.Builder().code(200)
+        .setHeader("Content-Type", "application/json").body(body)
+        .apply { if (delayMs > 0) headersDelay(delayMs, TimeUnit.MILLISECONDS) }
+        .build()
+
+    private fun startParams(player: FakePlayer) =
+        player.loads.mapNotNull { Regex("start=([^&]+)").find(it.first)?.groupValues?.get(1) }
 
     private fun TestScope.controller(player: FakePlayer) = PlaybackController(server.api(), player, caps, this) { now }
 
@@ -91,6 +106,106 @@ class PlaybackControllerTest {
 
     private val isProgress: (RecordedRequest) -> Boolean = { it.url.encodedPath.endsWith("/progress") }
     private val isCreate: (RecordedRequest) -> Boolean = { it.method == "POST" && it.url.encodedPath == "/api/playback/sessions" }
+    private val isOrigin: (RecordedRequest) -> Boolean = { it.url.encodedPath.endsWith("/origin") }
+
+    @Test
+    fun retourPendantLeChargementGardeLaReprise() = runTest {
+        // L'origine n'arrive qu'une fois ffmpeg lancé : la position doit rester celle demandée.
+        sessions += session("s1", "transcode", resume = 1200.0)
+        origin = "1200"
+        originDelayMs = 1_500
+        val player = FakePlayer()
+        val c = controller(player)
+        val job = launch { c.start(MediaRef.Library(3)) }
+        waitFor(1, isOrigin)
+        assertEquals(1200.0, c.position, 0.0)
+        c.stop()
+        val progress = waitFor(1, isProgress)
+        assertTrue(progress.first().body!!.utf8().contains(""""position":1200"""))
+        job.cancel()
+    }
+
+    @Test
+    fun deuxAppuisRapidesSAdditionnent() = runTest {
+        sessions += session("s1", "transcode", resume = 1200.0)
+        origin = "1200"
+        val player = FakePlayer()
+        val c = controller(player)
+        c.start(MediaRef.Library(3))
+        c.seekTo(c.position + 10)
+        c.seekTo(c.position + 10)
+        advanceTimeBy(400)
+        runCurrent()
+        assertEquals(listOf("1200", "1220"), startParams(player))
+    }
+
+    @Test
+    fun sautEnAvantRelanceAuDelaDeLImageCle() = runTest {
+        // Remux : l'image clé atteinte (595) précède la position quittée (600) : relance plus loin.
+        sessions += session("s1", "remux", resume = 600.0)
+        origins += listOf("600", "595", "626")
+        val player = FakePlayer()
+        val c = controller(player)
+        c.start(MediaRef.Library(3))
+        c.seekTo(610.0)
+        advanceTimeBy(400)
+        runCurrent()
+        waitFor(3, isOrigin)
+        assertEquals(listOf("600", "610", "626"), startParams(player))
+    }
+
+    @Test
+    fun passageALEpisodeSuivantUneSeuleFois() = runTest {
+        val next = """{"media":{"type":"episode","titleId":7,"season":1,"episode":3},"label":"É3"}"""
+        sessions += session("s1", "direct", duration = 1500.0, next = next)
+        sessions += session("s2", "direct")
+        createDelays += listOf(0L, 1_500L)
+        val player = FakePlayer()
+        val c = controller(player)
+        c.start(MediaRef.Episode(7, 1, 2))
+        player.positionSec = 1481.0
+        repeat(11) { c.tick() }
+        waitFor(2, isCreate)
+        // Pendant la création de la session suivante : ni nouveau compte à rebours, ni second passage.
+        c.tick()
+        assertNull(c.state.value.nextCountdown)
+        player.registered!!.onEnded()
+        withContext(Dispatchers.IO) { Thread.sleep(1_800) }
+        advanceUntilIdle()
+        assertEquals(2, requests.count(isCreate))
+        assertNull(c.state.value.nextCountdown)
+    }
+
+    @Test
+    fun coupureReseauRepriseAuMemeEndroit() = runTest {
+        sessions += session("s1", "direct")
+        val player = FakePlayer()
+        val c = controller(player)
+        c.start(MediaRef.Library(3))
+        c.tick()
+        player.positionSec = 300.0
+        player.registered!!.onError(PlayerFailure("le flux vidéo ne répond plus", network = true))
+        advanceTimeBy(1_100)
+        runCurrent()
+        assertEquals(1, requests.count(isCreate))
+        assertEquals(300.0, player.loads.last().second, 0.0)
+        assertNull(c.state.value.error)
+    }
+
+    @Test
+    fun compteAReboursAnnuleHorsDeLaFenetre() = runTest {
+        val next = """{"media":{"type":"episode","titleId":7,"season":1,"episode":3},"label":"É3"}"""
+        sessions += session("s1", "direct", duration = 1500.0, next = next)
+        val player = FakePlayer()
+        val c = controller(player)
+        c.start(MediaRef.Episode(7, 1, 2))
+        player.positionSec = 1481.0
+        c.tick()
+        assertEquals(10, c.state.value.nextCountdown)
+        player.positionSec = 1000.0
+        c.tick()
+        assertNull(c.state.value.nextCountdown)
+    }
 
     @Test
     fun lectureDirecteRepriseALaPosition() = runTest {
@@ -103,10 +218,14 @@ class PlaybackControllerTest {
     @Test
     fun conversionAvanceRapideEtOrigine() = runTest {
         sessions += session("s1", "transcode")
+        origins += listOf("0", "598.7")
         val player = FakePlayer()
         val c = controller(player)
         c.start(MediaRef.Library(3))
         c.seekTo(600.0)
+        advanceTimeBy(400)
+        runCurrent()
+        waitFor(2, isOrigin)
         val url = player.loads.last().first
         assertTrue(url.contains("start=600"))
         val firstStream = Regex("stream=([\\w-]+)").find(player.loads.first().first)!!.groupValues[1]
@@ -124,6 +243,8 @@ class PlaybackControllerTest {
         val c = controller(player)
         c.start(MediaRef.Library(3))
         c.seekTo(45.0)
+        advanceTimeBy(400)
+        runCurrent()
         assertTrue(player.loads.last().first.contains("start=37&"))
     }
 

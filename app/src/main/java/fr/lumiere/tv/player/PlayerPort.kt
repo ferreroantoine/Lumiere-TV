@@ -22,6 +22,12 @@ interface PlayerPort {
     }
 }
 
+/**
+ * Erreur du lecteur avec un message compréhensible ; `network` : flux coupé (réseau, serveur),
+ * à reprendre au même endroit plutôt qu'à convertir.
+ */
+class PlayerFailure(message: String, val network: Boolean = false, cause: Throwable? = null) : Exception(message, cause)
+
 private val ALPHABET = ('a'..'z') + ('A'..'Z') + ('0'..'9')
 
 /** Identifiant d'un chargement de flux (`&stream=<id>`), accepté par le serveur (`[\w-]{1,64}`). */

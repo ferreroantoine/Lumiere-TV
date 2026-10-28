@@ -10,6 +10,8 @@ import fr.lumiere.tv.data.api.ProgressUpdate
 import fr.lumiere.tv.data.api.ServerUnreachableException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -28,8 +30,9 @@ data class PlayerState(
 )
 
 /**
- * Pilote une lecture : session Lumière, flux, repositionnement, progression, épisode suivant
- * et repli en conversion. Sans dépendance à Android : le lecteur passe par [PlayerPort].
+ * Pilote une lecture : session Lumière, flux, repositionnement, progression, épisode suivant,
+ * reprise après coupure et repli en conversion. Sans dépendance à Android : le lecteur passe
+ * par [PlayerPort]. Même logique que le lecteur web de Lumière (apps/web/src/features/player).
  */
 class PlaybackController(
     private val api: LumiereApi,
@@ -45,9 +48,26 @@ class PlaybackController(
     private var media: MediaRef? = null
     private var session: PlaybackSession? = null
 
-    /** Instant réel de départ du flux en mode `restart` (conversion, remux). */
+    /**
+     * Instant réel de départ du flux en mode `restart` (conversion, remux). Provisoire (la
+     * position demandée) jusqu'à la réponse du serveur, qui n'arrive qu'une fois ffmpeg lancé.
+     */
     private var origin = 0.0
+
+    /** Flux chargé ; une réponse d'origine pour un autre flux est ignorée. */
+    private var currentStreamId: String? = null
+
+    /** Appuis successifs en mode `restart` : seule la dernière position est chargée. */
+    private var seekTarget: Double? = null
+    private var seekFrom = 0.0
+    private var seekJob: Job? = null
+
+    /** Passage à l'épisode suivant en cours (création de la session) : rien ne doit le relancer. */
+    private var switching = false
+
     private var fallbackTried = false
+    private var hasPlayed = false
+    private val recoveries = ArrayDeque<Long>()
     private var lastProgressAt = 0L
     private var nextCanceled = false
 
@@ -57,7 +77,8 @@ class PlaybackController(
 
     /** Position dans le média, en secondes (jamais négative : l'origine peut précéder zéro). */
     val position: Double
-        get() = (if (session?.seek == "restart") origin + player.positionSec else player.positionSec).coerceAtLeast(0.0)
+        get() = seekTarget
+            ?: (if (session?.seek == "restart") origin + player.positionSec else player.positionSec).coerceAtLeast(0.0)
 
     val currentSession: PlaybackSession? get() = session
 
@@ -76,19 +97,41 @@ class PlaybackController(
         previous?.let { closeQuietly(it.sessionId) }
         session = created
         nextCanceled = false
+        hasPlayed = false
+        recoveries.clear()
+        cancelPendingSeek()
         lastProgressAt = clock()
+        _state.update { it.copy(session = created, duration = created.duration, nextCountdown = null) }
         load(at ?: created.resumePosition)
         player.play()
-        _state.update { it.copy(session = created, duration = created.duration, loading = false, position = position) }
+        _state.update { it.copy(loading = false, position = position) }
     }
 
+    /**
+     * Repositionnement. Natif : immédiat. En `restart`, les appuis rapprochés sont regroupés
+     * (350 ms) et le flux n'est relancé qu'une fois, à la dernière position demandée.
+     */
     suspend fun seekTo(target: Double) {
         val s = session ?: return
         // Un flux converti relancé tout près de la fin serait vide : on s'arrête un peu avant.
         val max = s.duration?.let { (it - END_MARGIN_SEC).coerceAtLeast(0.0) } ?: Double.MAX_VALUE
         val clamped = target.coerceIn(0.0, max)
-        if (s.seek == "native") player.seekTo(clamped) else load(clamped)
-        _state.update { it.copy(position = position) }
+        if (s.seek == "native") {
+            player.seekTo(clamped)
+            _state.update { it.copy(position = position) }
+            return
+        }
+        if (seekTarget == null) seekFrom = position
+        seekTarget = clamped
+        _state.update { it.copy(position = clamped) }
+        seekJob?.cancel()
+        seekJob = scope.launch {
+            delay(SEEK_GROUPING_MS)
+            val to = seekTarget ?: return@launch
+            val from = seekFrom
+            seekTarget = null
+            load(to, forwardFrom = if (to > from) from else null)
+        }
     }
 
     /** Change de piste audio hors lecture directe : nouvelle session à la position courante. */
@@ -108,14 +151,20 @@ class PlaybackController(
     /** À appeler chaque seconde : progression toutes les 10 s, compte à rebours de l'épisode suivant. */
     fun tick() {
         val s = session ?: return
+        if (switching || _state.value.loading) return
+        if (player.isPlaying) hasPlayed = true
         val pos = position
         _state.update { it.copy(position = pos) }
         if (clock() - lastProgressAt >= PROGRESS_INTERVAL_MS) saveProgressAsync()
 
         val next = s.next ?: return
         val duration = s.duration ?: return
-        if (nextCanceled || duration - pos > NEXT_WINDOW_SEC) return
         val countdown = _state.value.nextCountdown
+        if (nextCanceled || duration - pos > NEXT_WINDOW_SEC) {
+            // Recul hors de la fenêtre de fin : le compte à rebours disparaît.
+            if (countdown != null) _state.update { it.copy(nextCountdown = null) }
+            return
+        }
         when {
             countdown == null -> _state.update { it.copy(nextCountdown = NEXT_COUNTDOWN) }
             countdown > 1 -> _state.update { it.copy(nextCountdown = countdown - 1) }
@@ -134,8 +183,10 @@ class PlaybackController(
 
     /** Envoie la position, ferme la session et libère le lecteur ; les erreurs réseau sont ignorées. */
     suspend fun stop() {
+        cancelPendingSeek()
         session?.let { s ->
-            runQuietly { api.saveProgress(s.sessionId, ProgressUpdate(position, s.duration)) }
+            val update = ProgressUpdate(position, s.duration)
+            runQuietly { api.saveProgress(s.sessionId, update) }
             runQuietly { api.stopSession(s.sessionId) }
         }
         session = null
@@ -143,6 +194,7 @@ class PlaybackController(
     }
 
     override fun onEnded() {
+        if (switching) return
         val next = session?.next
         if (next != null && !nextCanceled) playNext(next.media) else {
             saveProgressAsync()
@@ -151,6 +203,7 @@ class PlaybackController(
     }
 
     override fun onError(error: Throwable) {
+        if (switching) return
         val s = session
         val m = media
         // Fin d'un flux converti parfois signalée comme une erreur : c'est la fin du média.
@@ -159,6 +212,8 @@ class PlaybackController(
             onEnded()
             return
         }
+        // Coupure d'un flux déjà lu (réseau, serveur) : reprise au même endroit, dans la même session.
+        if (s != null && hasPlayed && error is PlayerFailure && error.network && recover()) return
         // Lecture directe ou remux (vidéo copiée) refusée par le décodeur : la conversion réencode la vidéo.
         if (s != null && m != null && s.mode != "transcode" && !fallbackTried) {
             fallbackTried = true
@@ -169,34 +224,81 @@ class PlaybackController(
         }
     }
 
+    /** Relance le flux là où il s'est interrompu ; false quand les reprises récentes sont épuisées. */
+    private fun recover(): Boolean {
+        val now = clock()
+        while (recoveries.isNotEmpty() && now - recoveries.first() >= RECOVERY_WINDOW_MS) recoveries.removeFirst()
+        if (recoveries.size >= MAX_RECOVERIES) return false
+        recoveries.addLast(now)
+        val s = session ?: return false
+        val at = position
+        _state.update { it.copy(loading = true) }
+        scope.launch {
+            delay(1_000L * recoveries.size)
+            if (session !== s) return@launch
+            load(at)
+            player.play()
+            _state.update { it.copy(loading = false) }
+        }
+        return true
+    }
+
     private fun playNext(next: MediaRef) {
+        if (switching) return
+        switching = true
         val finished = session
         _state.update { it.copy(nextCountdown = null) }
         fallbackTried = false
         scope.launch {
-            finished?.let { s -> runQuietly { api.saveProgress(s.sessionId, ProgressUpdate(s.duration ?: position, s.duration)) } }
-            start(next)
+            try {
+                finished?.let { s -> runQuietly { api.saveProgress(s.sessionId, ProgressUpdate(s.duration ?: position, s.duration)) } }
+                start(next)
+            } finally {
+                switching = false
+            }
         }
     }
 
-    private suspend fun load(requested: Double) {
+    /**
+     * Charge le flux à `requested`. En `restart`, l'origine provisoire est posée tout de suite ;
+     * `forwardFrom` : position quittée par un saut en avant ; si l'image clé atteinte la précède
+     * (images clés espacées en remux), le flux est relancé plus loin.
+     */
+    private suspend fun load(requested: Double, forwardFrom: Double? = null) {
         val s = session ?: return
         val at = requested.coerceAtLeast(0.0)
         val url = api.absoluteUrl(s.streamUrl)
         if (s.seek == "native") {
             origin = 0.0
+            currentStreamId = null
             player.load(url, at)
-        } else {
-            val streamId = newStreamId()
-            player.load("$url?start=${formatSeconds(at)}&stream=$streamId", 0.0)
-            origin = try {
-                api.streamOrigin(s.sessionId, streamId)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                at
-            }
+            return
         }
+        val streamId = newStreamId()
+        currentStreamId = streamId
+        origin = at
+        player.load("$url?start=${formatSeconds(at)}&stream=$streamId", 0.0)
+        val start = try {
+            api.streamOrigin(s.sessionId, streamId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            return
+        }
+        if (currentStreamId != streamId || session !== s) return
+        val further = at + (at - start) + 1
+        val duration = s.duration
+        if (forwardFrom != null && start <= forwardFrom + 1 && (duration == null || further < duration - 1)) {
+            load(further)
+            return
+        }
+        origin = start
+    }
+
+    private fun cancelPendingSeek() {
+        seekJob?.cancel()
+        seekJob = null
+        seekTarget = null
     }
 
     private fun saveProgressAsync() {
@@ -230,6 +332,9 @@ class PlaybackController(
         const val NEXT_WINDOW_SEC = 20.0
         const val NEXT_COUNTDOWN = 10
         const val END_MARGIN_SEC = 3.0
+        const val SEEK_GROUPING_MS = 350L
+        const val MAX_RECOVERIES = 3
+        const val RECOVERY_WINDOW_MS = 60_000L
 
         /** Secondes sans décimales inutiles : 600.0 donne « 600 », 12.5 donne « 12.5 ». */
         fun formatSeconds(value: Double): String =

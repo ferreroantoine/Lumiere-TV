@@ -40,6 +40,16 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun rechargementGardeLeContenuAffiche() = runTest {
+        // Retour sur l'accueil : le contenu reste à l'écran (focus, défilement) pendant le rechargement.
+        serveAll()
+        val vm = HomeViewModel(server.api())
+        vm.state.first { it is UiState.Ready }
+        vm.reload()
+        assertTrue(vm.state.value is UiState.Ready)
+    }
+
+    @Test
     fun serveurInjoignable() = runTest {
         val api = server.api()
         server.close()

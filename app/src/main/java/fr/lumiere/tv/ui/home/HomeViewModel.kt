@@ -33,8 +33,9 @@ class HomeViewModel(private val api: LumiereApi) : ViewModel() {
         reload()
     }
 
+    /** Recharge ; un contenu déjà affiché reste à l'écran pendant ce temps (focus et défilement gardés). */
     fun reload() {
-        _state.value = UiState.Loading
+        if (_state.value !is UiState.Ready) _state.value = UiState.Loading
         viewModelScope.launch {
             _state.value = try {
                 // coroutineScope : la première erreur remonte telle quelle (et annule les autres appels).

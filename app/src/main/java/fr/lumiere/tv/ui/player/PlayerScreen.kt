@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
@@ -81,10 +82,13 @@ fun PlayerScreen(media: MediaRef, onExit: () -> Unit) {
     var cues by remember { mutableStateOf(emptyList<Cue>()) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val rootFocus = remember { FocusRequester() }
+    var rootFocused by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.session?.sessionId) { state.session?.let(subs::attach) }
     LaunchedEffect(state.ended) { if (state.ended) onExit() }
-    LaunchedEffect(panelOpen) { if (!panelOpen) runCatching { rootFocus.requestFocus() } }
+    // Plus de panneau ni de carte : l'image reprend le focus (les touches du lecteur remarchent).
+    val overlayShown = panelOpen || state.nextCountdown != null || state.error != null
+    LaunchedEffect(overlayShown) { if (!overlayShown) runCatching { rootFocus.requestFocus() } }
     // Position et sous-titres rafraîchis quatre fois par seconde.
     LaunchedEffect(Unit) {
         while (true) {
@@ -115,9 +119,12 @@ fun PlayerScreen(media: MediaRef, onExit: () -> Unit) {
                 }
             }
             .focusRequester(rootFocus)
+            .onFocusChanged { rootFocused = it.isFocused }
             .focusable()
             .onKeyEvent { event ->
-                if (panelOpen || event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                // Touches du lecteur seulement quand l'image a le focus : une carte (épisode suivant,
+                // erreur) ou le panneau gardent la navigation normale au pavé directionnel.
+                if (!rootFocused || panelOpen || event.type != KeyEventType.KeyDown) return@onKeyEvent false
                 when (event.key) {
                     Key.DirectionCenter, Key.Enter, Key.NumPadEnter, Key.MediaPlayPause, Key.Spacebar -> {
                         vm.togglePause(); showControls(); true
