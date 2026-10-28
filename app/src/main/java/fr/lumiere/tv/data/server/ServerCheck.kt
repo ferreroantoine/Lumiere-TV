@@ -1,5 +1,6 @@
 package fr.lumiere.tv.data.server
 
+import android.util.Log
 import fr.lumiere.tv.data.api.HealthStatus
 import fr.lumiere.tv.data.api.LumiereJson
 import fr.lumiere.tv.data.api.SystemInfo
@@ -32,9 +33,11 @@ class ServerCheck(private val client: OkHttpClient) {
                 return@withContext CheckResult.NotLumiere
             }
             CheckResult.Ok(version)
-        } catch (_: InterruptedIOException) {
+        } catch (e: InterruptedIOException) {
+            Log.w("Lumiere", "Serveur ${address.baseUrl} : délai dépassé", e)
             CheckResult.Timeout
-        } catch (_: IOException) {
+        } catch (e: IOException) {
+            Log.w("Lumiere", "Serveur ${address.baseUrl} : injoignable", e)
             CheckResult.Unreachable
         }
     }
