@@ -21,11 +21,19 @@ fun Throwable.toUiError(): UiState.Error = when (this) {
 }
 
 /** Libellé du bouton de reprise : « Reprendre à 42 min », « Reprendre à 1 h 05 ». */
-fun formatResume(positionSec: Double): String {
-    if (positionSec < 60) return "Reprendre au début"
+fun formatResume(positionSec: Double): String =
+    if (positionSec < 60) "Reprendre au début" else "Reprendre à ${resumeTime(positionSec)}"
+
+/** Instant de reprise : « 42 min », « 1 h 05 ». */
+fun resumeTime(positionSec: Double): String {
     val minutes = (positionSec / 60).toInt()
-    return if (minutes < 60) "Reprendre à $minutes min"
-    else "Reprendre à ${minutes / 60} h %02d".format(minutes % 60)
+    return if (minutes < 60) "$minutes min" else "${minutes / 60} h %02d".format(minutes % 60)
+}
+
+/** Taille d'un fichier : « 1,4 Go », « 700 Mo ». */
+fun formatSize(bytes: Long): String {
+    val gb = bytes / 1_000_000_000.0
+    return if (gb >= 1) "%.1f Go".format(gb).replace('.', ',') else "${bytes / 1_000_000} Mo"
 }
 
 /** Durée d'un film ou d'un épisode : « 1 h 52 », « 45 min ». */

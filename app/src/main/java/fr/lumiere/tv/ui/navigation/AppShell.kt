@@ -48,6 +48,7 @@ import androidx.compose.ui.focus.focusRequester
 import fr.lumiere.tv.ui.components.AmbientBackground
 import fr.lumiere.tv.ui.components.LoadingScreen
 import fr.lumiere.tv.ui.home.HomeScreen
+import fr.lumiere.tv.ui.title.TitleScreen
 import fr.lumiere.tv.ui.catalog.CatalogScreen
 import fr.lumiere.tv.ui.search.SearchScreen
 import fr.lumiere.tv.data.api.TitleKind
@@ -109,7 +110,8 @@ private fun AppNavHost(start: Route) {
         composable<Route.Main> { MainScreen(nav) }
         composable<Route.Title> { entry ->
             val route = entry.toRoute<Route.Title>()
-            key(route.id) { EmptyMessage("Fiche ${route.id} : bientôt disponible") }
+            val navigator = androidx.compose.runtime.remember(nav) { Navigator(nav) }
+            key(route.id) { TitleScreen(route.id, route.autoPlay, navigator) }
         }
         composable<Route.Player> { entry ->
             val route = entry.toRoute<Route.Player>()
