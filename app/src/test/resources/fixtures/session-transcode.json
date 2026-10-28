@@ -1,0 +1,42 @@
+{
+  "sessionId": "5a40dca5-7fe5-4708-bb7b-37118f2b30d2",
+  "mode": "transcode",
+  "streamUrl": "/api/playback/sessions/5a40dca5-7fe5-4708-bb7b-37118f2b30d2/stream",
+  "mimeType": "video/mp4",
+  "seek": "restart",
+  "duration": 40,
+  "resumePosition": 0,
+  "mediaKey": "remote:/@stremio/movie/tt9100103/Cosmos.Odyssey.2025.2160p.WEB-DL.HDR.HEVC.10bit.DDP5.1-LUMIERE.mkv",
+  "title": "Cosmos Odyssey",
+  "subtitle": "2025",
+  "titleId": 3,
+  "posterUrl": "/api/images/w342/demo-poster-1003.jpg",
+  "backdropUrl": "/api/images/w1280/demo-backdrop-1003.jpg",
+  "audioTracks": [
+    {
+      "index": 0,
+      "label": "Piste 1 (Dolby Digital+ 5.1)",
+      "language": null,
+      "codec": "eac3",
+      "channels": 6,
+      "isDefault": false
+    }
+  ],
+  "selectedAudioTrack": 0,
+  "subtitleTracks": [],
+  "defaultSubtitleTrack": null,
+  "video": {
+    "codec": "hevc",
+    "width": 960,
+    "height": 540,
+    "hdr": false
+  },
+  "reasons": [
+    "Conversion forcée"
+  ],
+  "next": null,
+  "onlineSubtitles": {
+    "available": true,
+    "autoLanguage": null
+  }
+}

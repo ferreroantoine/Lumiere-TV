@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0",
+  "nodeVersion": "v24.14.0",
+  "platform": "win32 x64",
+  "dataDir": "/srv/lumiere/data/demo",
+  "downloadDir": "/srv/lumiere/data/demo/media",
+  "disk": {
+    "free": 362730463232,
+    "total": 510936477696
+  },
+  "ffmpeg": {
+    "available": true,
+    "version": "9.0.2-full_build-www.gyan.dev",
+    "ffprobeAvailable": true
+  },
+  "tmdbConfigured": true,
+  "catalog": [
+    {
+      "kind": "movie",
+      "state": "error",
+      "count": 0,
+      "lastRefreshAt": null,
+      "lastError": "Introuvable sur TMDB."
+    },
+    {
+      "kind": "series",
+      "state": "error",
+      "count": 0,
+      "lastRefreshAt": null,
+      "lastError": "Introuvable sur TMDB."
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "files": [
+    {
+      "name": "Les.Explorateurs.S01E02.1080p.WEB.H264-LUMIERE.mkv",
+      "path": "/@stremio/series/tt9100201/1x2/Les.Explorateurs.S01E02.1080p.WEB.H264-LUMIERE.mkv",
+      "size": 4339507,
+      "modifiedAt": null,
+      "release": {
+        "resolution": "1080p",
+        "source": "WEB",
+        "videoCodec": "H.264",
+        "audioCodec": null,
+        "hdr": null,
+        "languages": [],
+        "service": null,
+        "edition": null,
+        "group": "LUMIERE"
+      },
+      "season": 1,
+      "episode": 2,
+      "episodeEnd": null,
+      "availability": {
+        "download": null,
+        "libraryItemId": null,
+        "watch": null
+      },
+      "label": "Lumière démo · 1080p · 💾 4.1 MB"
+    }
+  ],
+  "notice": null
+}

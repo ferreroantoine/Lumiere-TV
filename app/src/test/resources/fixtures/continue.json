@@ -1,0 +1,26 @@
+[
+  {
+    "mediaKey": "/@stremio/series/tt9100201/1x2/Les.Explorateurs.S01E02.1080p.WEB.H264-LUMIERE.mkv",
+    "media": { "type": "episode", "titleId": 7, "season": 1, "episode": 2 },
+    "title": "Les Explorateurs",
+    "subtitle": "S1 É2 · Le Passage",
+    "titleId": 7,
+    "posterUrl": "/api/images/w342/explorateurs.jpg",
+    "backdropUrl": null,
+    "position": 61.5,
+    "duration": 45,
+    "updatedAt": "2026-10-28T14:52:00.000Z"
+  },
+  {
+    "mediaKey": "library:3",
+    "media": { "type": "library", "id": 3 },
+    "title": "Cosmos Odyssey",
+    "subtitle": null,
+    "titleId": 3,
+    "posterUrl": null,
+    "backdropUrl": null,
+    "position": 1200,
+    "duration": null,
+    "updatedAt": "2026-10-28T14:50:00.000Z"
+  }
+]

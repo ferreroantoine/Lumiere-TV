@@ -1,0 +1,54 @@
+{
+  "id": 3,
+  "kind": "movie",
+  "title": "Cosmos Odyssey",
+  "year": 2025,
+  "folderName": "Cosmos Odyssey (2025)",
+  "posterUrl": "/api/images/w342/demo-poster-1003.jpg",
+  "backdropUrl": "/api/images/w1280/demo-backdrop-1003.jpg",
+  "rating": 7.9,
+  "genres": [
+    "Science-Fiction",
+    "Drame"
+  ],
+  "overview": "Aux confins du système solaire, l'équipage du Kepler capte un signal venu d'ailleurs. Rentrer sur Terre ou répondre : chacun devra choisir ce qu'il est prêt à sacrifier.",
+  "libraryCount": 0,
+  "sourceStatus": "present",
+  "remotePath": "/@stremio/movie/tt9100103/",
+  "originalTitle": "Cosmos Odyssey",
+  "tagline": "Le silence n'est jamais vide.",
+  "runtime": 141,
+  "releaseDate": "2025-03-19",
+  "tmdbId": 1003,
+  "metadataStatus": "matched",
+  "files": [
+    {
+      "name": "Cosmos.Odyssey.2025.2160p.WEB-DL.HDR.HEVC.10bit.DDP5.1-LUMIERE.mkv",
+      "path": "/@stremio/movie/tt9100103/Cosmos.Odyssey.2025.2160p.WEB-DL.HDR.HEVC.10bit.DDP5.1-LUMIERE.mkv",
+      "size": 12683672,
+      "modifiedAt": null,
+      "release": {
+        "resolution": "2160p",
+        "source": "WEB-DL",
+        "videoCodec": "H.265",
+        "audioCodec": "DD+ 5.1",
+        "hdr": "HDR",
+        "languages": [],
+        "service": null,
+        "edition": null,
+        "group": "LUMIERE"
+      },
+      "season": null,
+      "episode": null,
+      "episodeEnd": null,
+      "availability": {
+        "download": null,
+        "libraryItemId": null,
+        "watch": null
+      },
+      "label": "Lumière démo · 4K · 💾 12.1 MB"
+    }
+  ],
+  "seasons": [],
+  "sourceNotice": null
+}

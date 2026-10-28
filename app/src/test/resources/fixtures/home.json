@@ -1,0 +1,298 @@
+{
+  "featured": [
+    {
+      "id": 3,
+      "kind": "movie",
+      "title": "Cosmos Odyssey",
+      "year": 2025,
+      "folderName": "Cosmos Odyssey (2025)",
+      "posterUrl": "/api/images/w342/demo-poster-1003.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1003.jpg",
+      "rating": 7.9,
+      "genres": [
+        "Science-Fiction",
+        "Drame"
+      ],
+      "overview": "Aux confins du système solaire, l'équipage du Kepler capte un signal venu d'ailleurs. Rentrer sur Terre ou répondre : chacun devra choisir ce qu'il est prêt à sacrifier.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 7,
+      "kind": "series",
+      "title": "Les Explorateurs",
+      "year": 2023,
+      "folderName": "Les Explorateurs",
+      "posterUrl": "/api/images/w342/demo-poster-2001.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-2001.jpg",
+      "rating": 8.3,
+      "genres": [
+        "Aventure",
+        "Science-Fiction"
+      ],
+      "overview": "Une équipe de jeunes scientifiques parcourt les recoins inexplorés de la planète, des fosses océaniques aux volcans endormis, et découvre que la Terre garde encore bien des secrets.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 2,
+      "kind": "movie",
+      "title": "Le Voyage imaginaire",
+      "year": 2023,
+      "folderName": "Le Voyage Imaginaire (2023)",
+      "posterUrl": "/api/images/w342/demo-poster-1002.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1002.jpg",
+      "rating": 8.1,
+      "genres": [
+        "Aventure",
+        "Fantastique"
+      ],
+      "overview": "Une cartographe insomniaque trouve un atlas dont les pages dessinent les rêves de ceux qui le lisent. Pour sauver son frère, elle devra traverser des pays qui n'existent que la nuit.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 5,
+      "kind": "movie",
+      "title": "Le Dernier Train",
+      "year": 2021,
+      "folderName": "Le Dernier Train (2021)",
+      "posterUrl": "/api/images/w342/demo-poster-1005.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1005.jpg",
+      "rating": 7.4,
+      "genres": [
+        "Drame",
+        "Romance"
+      ],
+      "overview": "Deux inconnus montent dans le dernier train de la nuit. Le temps d'un trajet entre Lyon et Marseille, ils vont se raconter ce qu'ils n'ont jamais osé dire à personne.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 8,
+      "kind": "series",
+      "title": "Orbite",
+      "year": 2020,
+      "folderName": "Orbite",
+      "posterUrl": "/api/images/w342/demo-poster-2002.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-2002.jpg",
+      "rating": 7.7,
+      "genres": [
+        "Science-Fiction",
+        "Mystère"
+      ],
+      "overview": "À bord d’une station spatiale en perdition, sept astronautes tentent de survivre tandis que, sur Terre, plus personne ne répond.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 1,
+      "kind": "movie",
+      "title": "Big Buck Moon",
+      "year": 2024,
+      "folderName": "Big Buck Moon (2024)",
+      "posterUrl": "/api/images/w342/demo-poster-1001.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1001.jpg",
+      "rating": 7.6,
+      "genres": [
+        "Animation",
+        "Aventure",
+        "Comédie"
+      ],
+      "overview": "Un lapin géant découvre la face cachée de la Lune et décide d'y planter le plus grand potager de l'univers, au grand dam des astronautes venus l'en déloger.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 4,
+      "kind": "movie",
+      "title": "Nuit blanche",
+      "year": 2022,
+      "folderName": "Nuit Blanche (2022)",
+      "posterUrl": "/api/images/w342/demo-poster-1004.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1004.jpg",
+      "rating": 7.1,
+      "genres": [
+        "Thriller",
+        "Crime"
+      ],
+      "overview": "Paris, une nuit d'été. Un chauffeur de taxi accepte une course qui va l'entraîner, d'arrondissement en arrondissement, au cœur d'une affaire qui le dépasse.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 6,
+      "kind": "movie",
+      "title": "L’Éclipse oubliée",
+      "year": 2024,
+      "folderName": "The Forgotten Eclipse (2024)",
+      "posterUrl": "/api/images/w342/demo-poster-1006.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1006.jpg",
+      "rating": 6.9,
+      "genres": [
+        "Mystère",
+        "Science-Fiction"
+      ],
+      "overview": "Une astronome amateur photographie une éclipse que personne d’autre n’a vue. Les archives, elles, gardent la trace d’une autre, survenue cent ans plus tôt jour pour jour.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    }
+  ],
+  "popularMovies": [
+    {
+      "id": 3,
+      "kind": "movie",
+      "title": "Cosmos Odyssey",
+      "year": 2025,
+      "folderName": "Cosmos Odyssey (2025)",
+      "posterUrl": "/api/images/w342/demo-poster-1003.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1003.jpg",
+      "rating": 7.9,
+      "genres": [
+        "Science-Fiction",
+        "Drame"
+      ],
+      "overview": "Aux confins du système solaire, l'équipage du Kepler capte un signal venu d'ailleurs. Rentrer sur Terre ou répondre : chacun devra choisir ce qu'il est prêt à sacrifier.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 2,
+      "kind": "movie",
+      "title": "Le Voyage imaginaire",
+      "year": 2023,
+      "folderName": "Le Voyage Imaginaire (2023)",
+      "posterUrl": "/api/images/w342/demo-poster-1002.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1002.jpg",
+      "rating": 8.1,
+      "genres": [
+        "Aventure",
+        "Fantastique"
+      ],
+      "overview": "Une cartographe insomniaque trouve un atlas dont les pages dessinent les rêves de ceux qui le lisent. Pour sauver son frère, elle devra traverser des pays qui n'existent que la nuit.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 5,
+      "kind": "movie",
+      "title": "Le Dernier Train",
+      "year": 2021,
+      "folderName": "Le Dernier Train (2021)",
+      "posterUrl": "/api/images/w342/demo-poster-1005.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1005.jpg",
+      "rating": 7.4,
+      "genres": [
+        "Drame",
+        "Romance"
+      ],
+      "overview": "Deux inconnus montent dans le dernier train de la nuit. Le temps d'un trajet entre Lyon et Marseille, ils vont se raconter ce qu'ils n'ont jamais osé dire à personne.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 1,
+      "kind": "movie",
+      "title": "Big Buck Moon",
+      "year": 2024,
+      "folderName": "Big Buck Moon (2024)",
+      "posterUrl": "/api/images/w342/demo-poster-1001.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1001.jpg",
+      "rating": 7.6,
+      "genres": [
+        "Animation",
+        "Aventure",
+        "Comédie"
+      ],
+      "overview": "Un lapin géant découvre la face cachée de la Lune et décide d'y planter le plus grand potager de l'univers, au grand dam des astronautes venus l'en déloger.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 4,
+      "kind": "movie",
+      "title": "Nuit blanche",
+      "year": 2022,
+      "folderName": "Nuit Blanche (2022)",
+      "posterUrl": "/api/images/w342/demo-poster-1004.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1004.jpg",
+      "rating": 7.1,
+      "genres": [
+        "Thriller",
+        "Crime"
+      ],
+      "overview": "Paris, une nuit d'été. Un chauffeur de taxi accepte une course qui va l'entraîner, d'arrondissement en arrondissement, au cœur d'une affaire qui le dépasse.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 6,
+      "kind": "movie",
+      "title": "L’Éclipse oubliée",
+      "year": 2024,
+      "folderName": "The Forgotten Eclipse (2024)",
+      "posterUrl": "/api/images/w342/demo-poster-1006.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-1006.jpg",
+      "rating": 6.9,
+      "genres": [
+        "Mystère",
+        "Science-Fiction"
+      ],
+      "overview": "Une astronome amateur photographie une éclipse que personne d’autre n’a vue. Les archives, elles, gardent la trace d’une autre, survenue cent ans plus tôt jour pour jour.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    }
+  ],
+  "popularSeries": [
+    {
+      "id": 7,
+      "kind": "series",
+      "title": "Les Explorateurs",
+      "year": 2023,
+      "folderName": "Les Explorateurs",
+      "posterUrl": "/api/images/w342/demo-poster-2001.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-2001.jpg",
+      "rating": 8.3,
+      "genres": [
+        "Aventure",
+        "Science-Fiction"
+      ],
+      "overview": "Une équipe de jeunes scientifiques parcourt les recoins inexplorés de la planète, des fosses océaniques aux volcans endormis, et découvre que la Terre garde encore bien des secrets.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    },
+    {
+      "id": 8,
+      "kind": "series",
+      "title": "Orbite",
+      "year": 2020,
+      "folderName": "Orbite",
+      "posterUrl": "/api/images/w342/demo-poster-2002.jpg",
+      "backdropUrl": "/api/images/w1280/demo-backdrop-2002.jpg",
+      "rating": 7.7,
+      "genres": [
+        "Science-Fiction",
+        "Mystère"
+      ],
+      "overview": "À bord d’une station spatiale en perdition, sept astronautes tentent de survivre tandis que, sur Terre, plus personne ne répond.",
+      "libraryCount": 0,
+      "sourceStatus": "unknown"
+    }
+  ],
+  "sections": [
+    {
+      "kind": "movie",
+      "state": "error",
+      "count": 0,
+      "lastRefreshAt": null,
+      "lastError": "Introuvable sur TMDB."
+    },
+    {
+      "kind": "series",
+      "state": "error",
+      "count": 0,
+      "lastRefreshAt": null,
+      "lastError": "Introuvable sur TMDB."
+    }
+  ]
+}
