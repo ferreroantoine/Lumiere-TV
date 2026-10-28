@@ -71,16 +71,49 @@ La lire avant toute modification de périmètre, d'architecture ou de lecture vi
   .254), ADB réseau ouvert sur le port 5555. PC de développement : `192.168.1.25` en Wi-Fi.
   L'installation par `adb` réseau ne marche que tant que le stick est sur ce réseau ; ensuite il
   sera sur un autre réseau que le PC.
-- Outils requis : JDK 17+, SDK Android (outils en ligne de commande), `platform-tools` (adb).
-  Au 2026-10-28 seul un JDK 11 (AdoptOpenJDK) est présent : rien d'autre n'est installé.
+- Outils installés (2026-10-28) : JDK 21 portable dans `%LOCALAPPDATA%\Programs\jdk21`
+  (`JAVA_HOME` utilisateur), SDK Android dans `%LOCALAPPDATA%\Android\Sdk` (`platforms;android-37.0`,
+  `build-tools;36.0.0`, `platform-tools`, `emulator`, image `system-images;android-31;android-tv;x86`),
+  AVD `lumiere_tv`. Le JDK 11 d'origine reste présent : toujours utiliser le JDK 21.
+- **PC d'entreprise** : proxy `<proxy de l entreprise>` avec inspection HTTPS. Gradle passe par
+  `~/.gradle/gradle.properties` (proxy + `javax.net.ssl.trustStoreType=Windows-ROOT`) ; `sdkmanager`
+  par `SDKMANAGER_OPTS` avec les mêmes options.
+- **FortiClient bloque `adb.exe` vers le réseau local** : `adb connect 192.168.1.160:5555` échoue
+  depuis ce PC alors que le stick répond. Ne pas contourner (contrôle de sécurité de l'entreprise) :
+  vérifier sur l'émulateur, et installer sur le stick depuis un autre PC ou par APK copié.
+- L'émulateur n'atteint pas le PC par `10.0.2.2` : utiliser `adb reverse tcp:8484 tcp:8484` et
+  l'adresse `127.0.0.1` dans l'appli.
+- Capacités constatées sur l'émulateur : vidéo `h264, hevc, vp9`, audio `aac, mp3, opus, flac`. Son
+  décodeur HEVC refuse le 10 bits : la lecture repasse alors en conversion (cas couvert).
+- Version d'Android du stick et ses capacités réelles : inconnues (pas d'accès `adb`).
 
 ## Commandes
 
-À compléter au scaffold (wrapper Gradle). Prévu :
+Gradle passe mal par le Bash de Claude Code (hook context-mode) : le lancer via `ctx_execute`
+(`cmd /c gradlew.bat ...`) ou PowerShell, avec `JAVA_HOME` sur le JDK 21.
 
 ```
-adb connect 192.168.1.160:5555     # première fois : accepter l'autorisation sur la TV
 gradlew.bat assembleDebug
-gradlew.bat installDebug
-gradlew.bat testDebugUnitTest
+gradlew.bat testDebugUnitTest          # tests JVM
+gradlew.bat assembleRelease            # APK signé : app/build/outputs/apk/release/app-release.apk
+emulator -avd lumiere_tv               # émulateur Android TV
+adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk
+adb -s emulator-5554 reverse tcp:8484 tcp:8484
 ```
+
+Signature de distribution : clé `%USERPROFILE%\.android\lumiere-tv.jks`, chemin et mot de passe dans
+`local.properties` (`lumiere.keystore`, `lumiere.keystore.password`, `lumiere.key.alias`). Ne jamais
+les versionner.
+
+Démo Lumière : sa génération de vidéos échoue avec ffmpeg 9 sur le fichier VP9 (`gbrap`) ; le fichier
+a été produit à la main (`-pix_fmt yuv420p`) dans `tools/demo-source/content` (ignoré par git).
+Correction à proposer côté Lumière : ajouter `-pix_fmt yuv420p` à ce job.
+
+## Écarts par rapport à la spec (décidés pendant l'implémentation)
+
+- Repli en conversion depuis la lecture directe **et** le remux (vidéo copiée refusée par le décodeur).
+- La position n'est jamais négative (le serveur peut annoncer une origine de flux juste avant zéro).
+- L'avance rapide s'arrête 3 s avant la fin ; une erreur du lecteur dans les 3 dernières secondes
+  vaut fin du média.
+- Le bandeau de l'accueil est fixe et présente le titre dont l'affiche a le focus.
+- Film : le fichier en cours de visionnage passe avant la copie de bibliothèque pour le bouton Lecture.

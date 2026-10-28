@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -16,9 +18,26 @@ android {
         versionName = "0.1.0"
     }
 
+    // Clé de distribution : chemin et mot de passe dans local.properties (non versionné).
+    val localProps = Properties().apply {
+        rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+    }
+    val keystore = localProps.getProperty("lumiere.keystore")
+    signingConfigs {
+        if (keystore != null) {
+            create("release") {
+                storeFile = file(keystore)
+                storePassword = localProps.getProperty("lumiere.keystore.password")
+                keyAlias = localProps.getProperty("lumiere.key.alias")
+                keyPassword = localProps.getProperty("lumiere.keystore.password")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
