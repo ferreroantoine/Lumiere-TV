@@ -41,7 +41,11 @@ import fr.lumiere.tv.data.server.message
 import fr.lumiere.tv.ui.appContainer
 import fr.lumiere.tv.ui.components.EmptyMessage
 import fr.lumiere.tv.ui.components.ErrorScreen
+import fr.lumiere.tv.ui.components.AmbientBackground
 import fr.lumiere.tv.ui.components.LoadingScreen
+import fr.lumiere.tv.ui.home.HomeScreen
+import fr.lumiere.tv.ui.theme.LumiereColors
+import androidx.tv.material3.NavigationDrawerItemDefaults
 import fr.lumiere.tv.ui.settings.SettingsScreen
 import fr.lumiere.tv.ui.setup.SetupScreen
 import fr.lumiere.tv.ui.theme.Safe
@@ -108,10 +112,16 @@ private fun AppNavHost(start: Route) {
 }
 
 /** Actions de navigation offertes aux sections. */
-class Navigator(private val nav: NavHostController) {
+class Navigator(private val nav: NavHostController, private val ambient: (String?) -> Unit = {}) {
     fun openTitle(id: Int) = nav.navigate(Route.Title(id))
+
+    /** Ouvre la fiche et lance aussitôt la lecture (version préférée ou reprise). */
+    fun playTitle(id: Int) = nav.navigate(Route.Title(id, autoPlay = true))
     fun play(media: MediaRef, titleId: Int? = null) = nav.navigate(Route.Player.of(media, titleId))
     fun changeServer() = nav.navigate(Route.Setup) { popUpTo(0) { inclusive = true } }
+
+    /** Image dont la couleur teinte le fond d'ambiance. */
+    fun setAmbient(imageUrl: String?) = ambient(imageUrl)
 }
 
 private fun Section.icon(): ImageVector = when (this) {
@@ -126,11 +136,13 @@ private fun Section.icon(): ImageVector = when (this) {
 @Composable
 private fun MainScreen(nav: NavHostController) {
     var section by rememberSaveable { mutableStateOf(Section.Home) }
-    val navigator = androidx.compose.runtime.remember(nav) { Navigator(nav) }
+    var ambient by rememberSaveable { mutableStateOf<String?>(null) }
+    val navigator = androidx.compose.runtime.remember(nav) { Navigator(nav) { ambient = it } }
 
     // Retour : d'une section vers l'Accueil ; depuis l'Accueil, l'appli se ferme.
     BackHandler(enabled = section != Section.Home) { section = Section.Home }
 
+    AmbientBackground(ambient)
     NavigationDrawer(
         drawerContent = { _ ->
             Column(
@@ -142,6 +154,12 @@ private fun MainScreen(nav: NavHostController) {
                         selected = section == item,
                         onClick = { section = item },
                         leadingContent = { Icon(item.icon(), contentDescription = null) },
+                        colors = NavigationDrawerItemDefaults.colors(
+                            focusedContainerColor = LumiereColors.Brand400,
+                            focusedContentColor = LumiereColors.Ink950,
+                            selectedContainerColor = LumiereColors.Ink700,
+                            selectedContentColor = LumiereColors.Brand200,
+                        ),
                     ) { Text(item.label) }
                 }
             }
@@ -156,6 +174,7 @@ private fun MainScreen(nav: NavHostController) {
 @Composable
 private fun SectionContent(section: Section, navigator: Navigator) {
     when (section) {
+        Section.Home -> HomeScreen(navigator)
         Section.Settings -> SettingsScreen(onChangeServer = navigator::changeServer)
         else -> EmptyMessage("${section.label} : bientôt disponible")
     }

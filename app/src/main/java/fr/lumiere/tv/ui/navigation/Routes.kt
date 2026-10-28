@@ -8,7 +8,8 @@ import kotlinx.serialization.Serializable
 sealed interface Route {
     @Serializable data object Setup : Route
     @Serializable data object Main : Route
-    @Serializable data class Title(val id: Int) : Route
+    /** Fiche d'un titre ; `autoPlay` lance la lecture dès la fiche chargée (bouton Lecture de l'accueil). */
+    @Serializable data class Title(val id: Int, val autoPlay: Boolean = false) : Route
 
     /** Le média est transmis en JSON : Navigation Compose ne sait pas porter une interface scellée. */
     @Serializable data class Player(val mediaJson: String, val titleId: Int? = null) : Route {
