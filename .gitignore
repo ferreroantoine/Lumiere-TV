@@ -8,3 +8,4 @@ captures/
 .superpowers/
 *.jks
 *.keystore
+dist/
